@@ -479,7 +479,7 @@ def estimate_poster_em(diff=None, preds=None, target=None, mode='dedpul', conver
 
 
 def estimate_poster_cv(df, target, estimator='dedpul', bayes=False, alpha=None, estimate_poster_options=None,
-                       estimate_diff_options=None, estimate_preds_cv_options=None, train_nn_options=None, text=False):
+                       estimate_diff_options=None, estimate_preds_cv_options=None, train_nn_options=None):
     """
     Estimates posteriors and priors alpha (if not provided) of N in U; f_u(x) = (1 - alpha) * f_p(x) + alpha * f_n(x)
     :param df: features, np.array (n_instances, n_features)

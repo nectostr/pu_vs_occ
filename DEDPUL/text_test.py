@@ -40,31 +40,32 @@ df_torch.drop(df_torch[(df_torch["label"] != 0) & (df_torch["label"] != 1)].inde
 
 # Mixing data (not the best way)
 df_torch["label_true"] = df_torch["label"]
-# print(len(df_torch[df_torch["label"] == 0]), len(df_torch[df_torch["label"] == 1]))
 df_torch["label"] = df_torch["label"] | np.random.randint(0,2, len(df_torch))
-# print(len(df_torch[df_torch["label"] == 0]), len(df_torch[df_torch["label"] == 1]))
 
+# Attention! After this lines dataframe will have 3 columns - label_true with values 0 and 1 where 1 -
+# correct class marked as 1 in label map, label with values 0 and 1 -
+# where 0 - "known, positive" class and 1 - "unlabeled" (this comes from DEDPUL needs)
+# and text - where string text lie.
+
+# Counting alpha for current random mixing
 alpha = len(df_torch[(df_torch["label"] == 1) & (df_torch["label_true"] == 1)]) / len(df_torch[df_torch["label"] == 1])
 print(alpha)
 
+# Usual DEDPUL function with added "text" modifier as True
 test_alpha, poster = estimate_poster_cv(df_torch, df_torch["label"], estimator='dedpul', alpha=None,
                                          estimate_poster_options={'disp': False},
                                          estimate_diff_options={},
                                          estimate_preds_cv_options={
-                                             #'fun': estimate_preds_cv,
                                              'cv': 3, 'n_networks': 10, 'lr': 0.0005, 'hid_dim': 64,
                                              'n_hid_layers': 1, 'random_state': 0#,
-                                             # 'train_nn_options': {
-                                             #     'n_epochs': 100, 'batch_size': 128,
-                                             #     'n_batches': 20, 'n_early_stop': 3, 'disp': False
-                                             # }
                                              , 'text': True
-                                         },
-                                            train_nn_options={
-                                                'n_epochs': 1000, 'batch_size': 128,
-                                                'n_batches': 20, 'n_early_stop': 3, 'disp': False
-                                            }
-                                        ,text=True
+                                         }
                                        )
 
+# Comparing alphas. See futher in DEDPUL options.
 print('alpha:', test_alpha, '\nerror:', abs(test_alpha - alpha))
+
+df_torch["predicted"] = [1 for i in range(len(df_torch))]
+df_torch[df_torch["label"] == 1]["predicted"] = poster
+print(df_torch[["label_true","predicted"]])
+print(len(df_torch[df_torch["label_true"] != df_torch["predicted"]])/len(df_torch[df_torch["label"]==1]))

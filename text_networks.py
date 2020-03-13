@@ -3,12 +3,12 @@ from torchtext.data.utils import ngrams_iterator
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 from torchtext.vocab import Vocab
-from torch.utils.data import DataLoader
 from torchtext.datasets.text_classification import TextClassificationDataset
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
 from torch.utils.data.dataset import random_split
+from torch.utils.data import DataLoader
 
 import pickle
 from tqdm import tqdm
@@ -17,31 +17,36 @@ import time
 import numpy as np
 import pandas as pd
 
+# Some predifiends
 NGRAMS = 2
 BATCH_SIZE = 16
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def _pd_iterator(df_torch, ngrams, yield_cls=False):
+
+def _pd_iterator(data_to_parse: np.ndarray, ngrams: int, yield_cls: bool=False):
+    """
+    :param data_to_parse: array of two colums with label and text
+    :param ngrams: amount of ngrams
+    :param yield_cls: return text with label or without
+    :return: generator needed in future parsing for torch
+    """
     tokenizer = get_tokenizer(None)
-    for row_id in range(len(df_torch)):
-        tokens = df_torch[row_id][1]
+    for row_id in range(len(data_to_parse)):
+        tokens = data_to_parse[row_id][1]
         tokens = tokenizer(tokens)
         if yield_cls:
-            yield df_torch[row_id][0], ngrams_iterator(tokens, ngrams)
+            yield data_to_parse[row_id][0], ngrams_iterator(tokens, ngrams)
         else:
             yield ngrams_iterator(tokens, ngrams)
 
-# def _pd_iterator(df_torch, ngrams, yield_cls=False):
-#     tokenizer = get_tokenizer(None)
-#     for row_id in range(len(df_torch)):
-#         tokens = df_torch.iloc[row_id]["text"]
-#         tokens = tokenizer(tokens)
-#         if yield_cls:
-#             yield df_torch.iloc[row_id]["label"], ngrams_iterator(tokens, ngrams)
-#         else:
-#             yield ngrams_iterator(tokens, ngrams)
-
 def _create_data_from_iterator(vocab, iterator, include_unk):
+    """
+    creates data from previosly build generator
+    :param vocab:
+    :param iterator:
+    :param include_unk:
+    :return:
+    """
     data = []
     labels = []
     with tqdm(unit_scale=0, unit='lines') as t:
@@ -60,19 +65,30 @@ def _create_data_from_iterator(vocab, iterator, include_unk):
     return data, set(labels)
 
 
-def _setup_datasets(df_torch, ngrams=1, vocab=None, include_unk=False):
+def _setup_datasets(data_to_parse, ngrams=1, vocab=None, include_unk=False):
+    """
+    Uses given data to create Torch Text Dataset
+    :param data_to_parse:
+    :param ngrams:
+    :param vocab:
+    :param include_unk:
+    :return:
+    """
     if vocab is None:
-        vocab = build_vocab_from_iterator(_pd_iterator(df_torch, ngrams))
+        vocab = build_vocab_from_iterator(_pd_iterator(data_to_parse, ngrams))
     else:
         if not isinstance(vocab, Vocab):
             raise TypeError("Passed vocabulary is not of type Vocab")
 
     train_data, train_labels = _create_data_from_iterator(
-        vocab, _pd_iterator(df_torch, ngrams, yield_cls=True), include_unk)
+        vocab, _pd_iterator(data_to_parse, ngrams, yield_cls=True), include_unk)
 
     return TextClassificationDataset(vocab, train_data, train_labels)
 
 class TextSentiment(nn.Module):
+    """
+    Network block
+    """
     def __init__(self, vocab_size, embed_dim, num_class):
         super().__init__()
         self.embedding = nn.EmbeddingBag(vocab_size, embed_dim, sparse=True)
@@ -103,13 +119,14 @@ class TextSentiment(nn.Module):
 
 
 def generate_batch(batch):
+    """
+    As named - generates  batches for training
+    :param batch:
+    :return:
+    """
     label = torch.tensor([entry[0] for entry in batch])
     text = [entry[1] for entry in batch]
     offsets = [0] + [len(entry) for entry in text]
-    # torch.Tensor.cumsum returns the cumulative sum
-    # of elements in the dimension dim.
-    # torch.Tensor([1.0, 2.0, 3.0]).cumsum(dim=0)
-
     offsets = torch.tensor(offsets[:-1]).cumsum(dim=0)
 
     try:
@@ -122,21 +139,28 @@ def generate_batch(batch):
 
 
 def get_text_result(df):
+    """
+    Prepares text, buld and train network and return results for PU in "preds" term.
+    :param df: values of dataframe (numpy array)
+    :return:
+    """
+    # Parse text and build torch text dataset
     train_dataset = _setup_datasets(df, ngrams=NGRAMS, include_unk=True)
-    # with open("../train_ds_lemm.pckl", 'rb') as f:
-    #     train_dataset = pickle.load(f)
-    # with open("../test_ds_lemm.pckl", 'rb') as f:
-    #     test_dataset = pickle.load(f)
+
     VOCAB_SIZE = len(train_dataset.get_vocab())
     EMBED_DIM = 32
-    NUM_CLASS = len(train_dataset.get_labels())
-    model = TextSentiment(VOCAB_SIZE, EMBED_DIM, 1).to(device)
+    # In case of multi-class classification
+    NUM_CLASS = 1#len(train_dataset.get_labels())
+    # Creating neural network model
+    model = TextSentiment(VOCAB_SIZE, EMBED_DIM, NUM_CLASS).to(device)
 
-    from torch.utils.data import DataLoader
 
     def train_func(sub_train_):
-
-        # Train the model
+        """
+        Trains the network
+        :param sub_train_: dataset
+        :return:
+        """
         train_loss = 0
         train_acc = 0
         data = DataLoader(sub_train_, batch_size=BATCH_SIZE, shuffle=True,
@@ -151,12 +175,14 @@ def get_text_result(df):
             optimizer.step()
             train_acc += (output.round().int() == cls).sum().item()
 
-        # Adjust the learning rate
-        #     scheduler.step()
-
         return train_loss / len(sub_train_), train_acc / len(sub_train_)
 
     def test(data_):
+        """
+        Tests the network (no gradiens counting compare to train)
+        :param data_:
+        :return:
+        """
         loss = 0
         acc = 0
         data = DataLoader(data_, batch_size=BATCH_SIZE, collate_fn=generate_batch)
@@ -171,9 +197,13 @@ def get_text_result(df):
         return loss / len(data_), acc / len(data_)
 
     def predict(data_):
+        """
+        Same as train, bit return result but not accuracy
+        :param data_:
+        :return:
+        """
         result = []
         data = DataLoader(data_, batch_size=1, collate_fn=generate_batch)
-
         for text, offsets, _ in data:
             text, offsets = text.to(device), offsets.to(device)
             with torch.no_grad():
@@ -182,15 +212,11 @@ def get_text_result(df):
 
         return np.array(result)
 
-    import time
-    from torch.utils.data.dataset import random_split
     N_EPOCHS = 20
-    min_valid_loss = float('inf')
-
     criterion = torch.nn.BCELoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1, gamma=0.9)
 
+    # Train-validation split
     train_len = int(len(train_dataset) * 0.95)
     sub_train_, sub_valid_ = \
         random_split(train_dataset, [train_len, len(train_dataset) - train_len])
@@ -212,6 +238,7 @@ def get_text_result(df):
 
 
 if __name__ == '__main__':
+    # In case of testing the network as usual classifier
     df = pd.read_csv("DATA/text_test/malicious_posts.csv", header=None)
     df.columns = "index", "text", "label1", "label2"
     df["text"] = (df["text"]
