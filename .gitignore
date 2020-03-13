@@ -1,4 +1,5 @@
 *
-!DEDPUL
+!DEDPUL\*
 !one-class
 !.gitignore
+!text_networks.py
