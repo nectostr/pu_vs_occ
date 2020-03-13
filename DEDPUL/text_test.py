@@ -38,18 +38,16 @@ df_torch["text"] = df["text"]
 # Cutting data results to two
 df_torch.drop(df_torch[(df_torch["label"] != 0) & (df_torch["label"] != 1)].index, inplace=True)
 
-alpha = 0.05
+alpha = 0.75
 
 # Mixing data (not the best way)
 df_torch["label_true"] = df_torch["label"]
-numbers_to_dename = (1-alpha)*len(df_torch[df_torch["label_true"]==1])/alpha
+numbers_to_dename = int((1-alpha)*len(df_torch[df_torch["label_true"]==1])/alpha)
 denamed = 0
 # print(numbers_to_dename, len(df_torch[df_torch["label_true"]==1]) / (numbers_to_dename + len(df_torch[df_torch["label_true"]==1])))
-while denamed < numbers_to_dename:
-    ind = np.random.randint(0, len(df_torch))
-    if df_torch.iloc[ind]["label"] == 0:
-        df_torch.iat[ind, 0] = 1
-        denamed += 1
+# print(np.random.choice(df_torch[df_torch["label_true"] == 0].index, numbers_to_dename))
+for i in np.random.choice(df_torch[df_torch["label_true"] == 0].index, numbers_to_dename):
+        df_torch.at[i, "label"] = 1
 
 # df_torch["label"] = df_torch["label"] | np.random.randint(0,2, len(df_torch))
 
