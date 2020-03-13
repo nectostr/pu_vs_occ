@@ -67,5 +67,5 @@ print('alpha:', test_alpha, '\nerror:', abs(test_alpha - alpha))
 
 df_torch["predicted"] = [1 for i in range(len(df_torch))]
 df_torch[df_torch["label"] == 1]["predicted"] = poster
-print(df_torch[["label_true","predicted"]])
+# print(df_torch[["label_true","predicted"]])
 print(len(df_torch[df_torch["label_true"] != df_torch["predicted"]])/len(df_torch[df_torch["label"]==1]))

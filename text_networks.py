@@ -89,12 +89,12 @@ class TextSentiment(nn.Module):
     """
     Network block
     """
-    def __init__(self, vocab_size, embed_dim, num_class):
+    def __init__(self, vocab_size, embed_dim, num_class, hiden_dim=16):
         super().__init__()
         self.embedding = nn.EmbeddingBag(vocab_size, embed_dim, sparse=True)
-        self.fc1 = nn.Linear(embed_dim, 16)
+        self.fc1 = nn.Linear(embed_dim, hiden_dim)
 #         self.fc2 = nn.Linear(embed_dim//2, embed_dim//2)
-        self.fc3 = nn.Linear(16, num_class)
+        self.fc3 = nn.Linear(hiden_dim, num_class)
         self.init_weights()
 
     def init_weights(self):
@@ -138,7 +138,7 @@ def generate_batch(batch):
 
 
 
-def get_text_result(df):
+def get_text_result(df, epohs=10, lr=0.1, hid_dim=32):
     """
     Prepares text, buld and train network and return results for PU in "preds" term.
     :param df: values of dataframe (numpy array)
@@ -152,7 +152,7 @@ def get_text_result(df):
     # In case of multi-class classification
     NUM_CLASS = 1#len(train_dataset.get_labels())
     # Creating neural network model
-    model = TextSentiment(VOCAB_SIZE, EMBED_DIM, NUM_CLASS).to(device)
+    model = TextSentiment(VOCAB_SIZE, EMBED_DIM, NUM_CLASS, hid_dim).to(device)
 
 
     def train_func(sub_train_):
@@ -212,9 +212,9 @@ def get_text_result(df):
 
         return np.array(result)
 
-    N_EPOCHS = 20
+    N_EPOCHS = epohs
     criterion = torch.nn.BCELoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
 
     # Train-validation split
     train_len = int(len(train_dataset) * 0.95)
