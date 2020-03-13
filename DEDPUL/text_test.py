@@ -38,9 +38,20 @@ df_torch["text"] = df["text"]
 # Cutting data results to two
 df_torch.drop(df_torch[(df_torch["label"] != 0) & (df_torch["label"] != 1)].index, inplace=True)
 
+alpha = 0.05
+
 # Mixing data (not the best way)
 df_torch["label_true"] = df_torch["label"]
-df_torch["label"] = df_torch["label"] | np.random.randint(0,2, len(df_torch))
+numbers_to_dename = (1-alpha)*len(df_torch[df_torch["label_true"]==1])/alpha
+denamed = 0
+# print(numbers_to_dename, len(df_torch[df_torch["label_true"]==1]) / (numbers_to_dename + len(df_torch[df_torch["label_true"]==1])))
+while denamed < numbers_to_dename:
+    ind = np.random.randint(0, len(df_torch))
+    if df_torch.iloc[ind]["label"] == 0:
+        df_torch.iat[ind, 0] = 1
+        denamed += 1
+
+# df_torch["label"] = df_torch["label"] | np.random.randint(0,2, len(df_torch))
 
 # Attention! After this lines dataframe will have 3 columns - label_true with values 0 and 1 where 1 -
 # correct class marked as 1 in label map, label with values 0 and 1 -
@@ -48,11 +59,12 @@ df_torch["label"] = df_torch["label"] | np.random.randint(0,2, len(df_torch))
 # and text - where string text lie.
 
 # Counting alpha for current random mixing
-alpha = len(df_torch[(df_torch["label"] == 1) & (df_torch["label_true"] == 1)]) / len(df_torch[df_torch["label"] == 1])
-print(alpha)
+alpha_r = len(df_torch[(df_torch["label"] == 1) & (df_torch["label_true"] == 1)]) / len(df_torch[df_torch["label"] == 1])
+print(f"asked alpha {alpha}, real alpha {alpha_r}")
+
 
 # Usual DEDPUL function with added "text" modifier as True
-test_alpha, poster = estimate_poster_cv(df_torch, df_torch["label"], estimator='dedpul', alpha=None,
+test_alpha, poster = estimate_poster_cv(df_torch[["label", "text"]], df_torch["label"], estimator='dedpul', alpha=None,
                                          estimate_poster_options={'disp': False},
                                          estimate_diff_options={},
                                          estimate_preds_cv_options={
@@ -63,9 +75,9 @@ test_alpha, poster = estimate_poster_cv(df_torch, df_torch["label"], estimator='
                                        )
 
 # Comparing alphas. See futher in DEDPUL options.
-print('alpha:', test_alpha, '\nerror:', abs(test_alpha - alpha))
+print('predicted alpha:', test_alpha, '\nerror:', abs(test_alpha - alpha))
 
 df_torch["predicted"] = [1 for i in range(len(df_torch))]
 df_torch[df_torch["label"] == 1]["predicted"] = poster
 # print(df_torch[["label_true","predicted"]])
-print(len(df_torch[df_torch["label_true"] != df_torch["predicted"]])/len(df_torch[df_torch["label"]==1]))
+print(f'accuracy on unlabled part of dataset: {len(df_torch[df_torch["label_true"] != df_torch["predicted"]])/len(df_torch[df_torch["label"]==1])}')

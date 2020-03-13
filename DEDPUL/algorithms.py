@@ -24,7 +24,7 @@ from DEDPUL.NN_functions import *
 
 def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid_layers=1,
                       random_state=None, training_mode='standard', alpha=None, train_nn_options=None,
-                      all_conv=False, bayes=False, text=False):
+                      all_conv=False, bayes=False, epohs=10, text=False):
     """
     Estimates posterior probability y(x) of belonging to U rather than P (ignoring relative sizes of U and P);
         predictions are the average of an ensemble of n_networks neural networks;
