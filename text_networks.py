@@ -21,16 +21,25 @@ NGRAMS = 2
 BATCH_SIZE = 16
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 def _pd_iterator(df_torch, ngrams, yield_cls=False):
     tokenizer = get_tokenizer(None)
     for row_id in range(len(df_torch)):
-        tokens = df_torch.iloc[row_id]["text"]
+        tokens = df_torch[row_id][1]
         tokens = tokenizer(tokens)
         if yield_cls:
-            yield df_torch.iloc[row_id]["label"], ngrams_iterator(tokens, ngrams)
+            yield df_torch[row_id][0], ngrams_iterator(tokens, ngrams)
         else:
             yield ngrams_iterator(tokens, ngrams)
+
+# def _pd_iterator(df_torch, ngrams, yield_cls=False):
+#     tokenizer = get_tokenizer(None)
+#     for row_id in range(len(df_torch)):
+#         tokens = df_torch.iloc[row_id]["text"]
+#         tokens = tokenizer(tokens)
+#         if yield_cls:
+#             yield df_torch.iloc[row_id]["label"], ngrams_iterator(tokens, ngrams)
+#         else:
+#             yield ngrams_iterator(tokens, ngrams)
 
 def _create_data_from_iterator(vocab, iterator, include_unk):
     data = []
