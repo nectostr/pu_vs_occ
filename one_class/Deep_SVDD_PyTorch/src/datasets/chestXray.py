@@ -57,12 +57,11 @@ class XRay_Dataset(TorchvisionDataset):
 class MyXRay(VisionDataset):
     """Torchvision MNIST class with patch of __getitem__ method to also return the index of a data sample."""
 
-    def __init__(self, root, train, transform, target_transform):
+    def __init__(self, root, train, transform, target_transform, in_memory=False):
         # TODO: not shure about inheritance. Do I need it at all
-        super().__init__(root)
-
+        super().__init__(root, transform, target_transform)
         self.train = train
-
+        self.in_memory = in_memory
         if train:
             train_lbl = "train"
         else:
@@ -71,10 +70,23 @@ class MyXRay(VisionDataset):
 
         with open(path, "r") as f:
             data = json.load(f)
+
+        if self.in_memory:
+            for i in range(len(data)):
+                img = Image.open(os.path.normpath(os.path.join(self.root, data[i][0].replace("\\", "/"))))
+                img = np.asarray(img)[:, :, 0]
+                img = img / 255.0
+                img = np.array(img.reshape((1,) + img.shape), dtype=np.float32)
+                if self.transform is not None:
+                    img = self.transform(img)
+                data[i][0] = img
+
         if train:
             self.train_data = data
         else:
             self.test_data = data
+
+
 
     def __len__(self):
         if self.train:
@@ -95,14 +107,12 @@ class MyXRay(VisionDataset):
         else:
             img, target = self.test_data[index][0], self.test_data[index][1]
 
-        img = Image.open(os.path.normpath(os.path.join(self.root, img)))
+        if not self.in_memory:
+            img = Image.open(os.path.normpath(os.path.join(self.root, img)))
 
-        # doing this so that it is consistent with all other datasets
-        # to return a PIL Image
-        # img = Image.fromarray(np.asarray(img)[:,:,1], mode='L')
-        img = np.asarray(img)[:,:,0]
-        img = img / 255.0       # before: uint8 and 0..255, after: np.float and 0..1
-        img = np.array(img.reshape((1,)+img.shape), dtype=np.float32)
+            img = np.asarray(img)[:,:,0]
+            img = img / 255.0       # before: uint8 and 0..255, after: np.float and 0..1
+            img = np.array(img.reshape((1,)+img.shape), dtype=np.float32)
 
         if self.transform is not None:
             img = self.transform(img)
