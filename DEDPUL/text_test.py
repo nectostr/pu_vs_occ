@@ -72,11 +72,11 @@ test_alpha, poster = estimate_poster_cv(df_torch[["label", "text"]], df_torch["l
                                          }
                                        )
 
-# Comparing alphas. See futher in DEDPUL options.
+# Comparing alphas. See further in DEDPUL options.
 print('predicted alpha:', test_alpha, '\nerror:', abs(test_alpha - alpha))
 
 df_torch["predicted"] = [1 for i in range(len(df_torch))]
 df_torch[df_torch["label"] == 1]["predicted"] = poster
-# print(df_torch[["label_true","predicted"]])
-# print(f'accuracy on unlabled part of dataset: '
-#       f'{len(df_torch[(df_torch["label_true"] != df_torch["predicted"]) & (df_torch["label"]==1)])/len(df_torch[df_torch["label"]==1])}')
+print(df_torch[["label_true","predicted"]])
+print(f'accuracy on unlabeled part of dataset: '
+      f'{len(df_torch[(df_torch["label_true"] != df_torch["predicted"]) & (df_torch["label"]==1)])/len(df_torch[df_torch["label"]==1])}')
