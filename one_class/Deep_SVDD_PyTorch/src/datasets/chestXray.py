@@ -49,9 +49,12 @@ class MyXRay(VisionDataset):
         with open(path, "r") as f:
             data = json.load(f)
 
-        for i in range(len(data)):
+        i = 0
+        while i < len(data):
             if not os.path.exists(os.path.join(self.root, data[i][0])):
                 del data[i]
+            else:
+                i += 1
 
         logging.info(f"{'train' if train else 'test'} dataset has {len(data)} len")
 
