@@ -51,7 +51,8 @@ class MyXRay(VisionDataset):
 
         i = 0
         while i < len(data):
-            if not os.path.exists(os.path.join(self.root, data[i][0])):
+            # TODO: Replace - replace it in real
+            if not os.path.exists(os.path.join(self.root, data[i][0].replace("\\", "/"))):
                 del data[i]
             else:
                 i += 1
