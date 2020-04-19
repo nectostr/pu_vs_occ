@@ -95,7 +95,8 @@ class MyXRay(VisionDataset):
             img, target = self.test_data[index][0], self.test_data[index][1]
 
         if not self.in_memory:
-            img = Image.open(os.path.normpath(os.path.join(self.root, img)))
+            #TODO: real replce
+            img = Image.open(os.path.normpath(os.path.join(self.root, img.replace("\\", "/"))))
 
             img = np.asarray(img)[:,:,0]
             img = img / 255.0       # before: uint8 and 0..255, after: np.float and 0..1
