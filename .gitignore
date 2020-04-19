@@ -7,4 +7,5 @@
 !one_class/README.md
 !.gitignore
 !text_networks.py
-!one_class/Deep_SVDD_PyTorch/*
+!one_class/Deep_SVDD_PyTorch/src/*
+!one_class/Deep_SVDD_PyTorch/README.md
