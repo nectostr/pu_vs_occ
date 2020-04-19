@@ -43,15 +43,13 @@ class XRay_Dataset(TorchvisionDataset):
 
         target_transform = transforms.Lambda(lambda x: int(x in self.outlier_classes))
 
-        train_set = MyXRay(root=self.root, train=True,
-                            transform=transform, target_transform=target_transform)
+        train_set = MyXRay(root=self.root, train=True)
         # Subset train_set to normal class
         # train_idx_normal = get_target_label_idx(train_set.train_labels.clone().data.cpu().numpy(), self.normal_classes)
         self.train_set = Subset(train_set, (0,))
         self.train_set = train_set
 
-        self.test_set = MyXRay(root=self.root, train=False,
-                                transform=transform, target_transform=target_transform)
+        self.test_set = MyXRay(root=self.root, train=False)
 
 # наследования
 class MyXRay(VisionDataset):
