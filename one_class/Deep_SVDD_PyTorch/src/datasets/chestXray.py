@@ -57,9 +57,9 @@ class XRay_Dataset(TorchvisionDataset):
 class MyXRay(VisionDataset):
     """Torchvision MNIST class with patch of __getitem__ method to also return the index of a data sample."""
 
-    def __init__(self, root, train, transform, target_transform, in_memory=False):
+    def __init__(self, root, train, in_memory=False):
         # TODO: not shure about inheritance. Do I need it at all
-        super().__init__(root, transform, target_transform)
+        super().__init__(root)
         self.train = train
         self.in_memory = in_memory
         if train:
@@ -77,8 +77,7 @@ class MyXRay(VisionDataset):
                 img = np.asarray(img)[:, :, 0]
                 img = img / 255.0
                 img = np.array(img.reshape((1,) + img.shape), dtype=np.float32)
-                if self.transform is not None:
-                    img = self.transform(img)
+                img = torch.from_numpy(img)
                 data[i][0] = img
 
         if train:
@@ -113,11 +112,6 @@ class MyXRay(VisionDataset):
             img = np.asarray(img)[:,:,0]
             img = img / 255.0       # before: uint8 and 0..255, after: np.float and 0..1
             img = np.array(img.reshape((1,)+img.shape), dtype=np.float32)
-
-        if self.transform is not None:
-            img = self.transform(img)
-
-        if self.target_transform is not None:
-            target = self.target_transform(target)
+            img = torch.from_numpy(img)
 
         return img, target, index  # only line changed
