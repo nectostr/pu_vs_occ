@@ -188,7 +188,7 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, ob
             X_normals = torch.tensor(np.transpose(dataset.test_set.test_data[idx_sorted[:32], ...], (0, 3, 1, 2)))
             X_outliers = torch.tensor(np.transpose(dataset.test_set.test_data[idx_sorted[-32:], ...], (0, 3, 1, 2)))
 
-        elif dataset_name == 'synth':
+        elif dataset_name == 'xray224':
             X_normals = dataset.test_set.data[idx_sorted[:32], ...].unsqueeze(1)
             X_outliers = dataset.test_set.data[idx_sorted[-32:], ...].unsqueeze(1)
 

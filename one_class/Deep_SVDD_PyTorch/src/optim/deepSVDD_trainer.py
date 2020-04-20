@@ -50,7 +50,8 @@ class DeepSVDDTrainer(BaseTrainer):
                                amsgrad=self.optimizer_name == 'amsgrad')
 
         # Set learning rate scheduler
-        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
+        #TODO: turned off - think about turn it on
+        #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
 
         # Initialize hypersphere center c (if c not loaded)
         if self.c is None:
@@ -64,9 +65,9 @@ class DeepSVDDTrainer(BaseTrainer):
         net.train()
         for epoch in range(self.n_epochs):
 
-            scheduler.step()
-            if epoch in self.lr_milestones:
-                logger.info('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
+            #scheduler.step() look above
+            #if epoch in self.lr_milestones:
+            #    logger.info('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
 
             loss_epoch = 0.0
             n_batches = 0

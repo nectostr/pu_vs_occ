@@ -13,6 +13,7 @@ class XRAY_Net(BaseNet):
         features_lvl1 = 16
         features_lvl2 = 32
         features_lvl3 = 64
+        self.rep_dim = 32
 
         # Encoder (must match the Deep SVDD network above)
         self.conv1 = nn.Conv2d(1, features_lvl1, kernel_size=5, stride=3)
@@ -21,7 +22,9 @@ class XRAY_Net(BaseNet):
         self.bn2 = nn.BatchNorm2d(features_lvl2, eps=1e-04, affine=False)
         self.conv3 = nn.Conv2d(features_lvl2, features_lvl2, kernel_size=5, stride=2)
         self.conv4 = nn.Conv2d(features_lvl2, features_lvl3, kernel_size=3, stride=1)
+        internal_size = 12544
 
+        self.fc1 = nn.Linear(internal_size, self.rep_dim)
 
     def forward(self, x):
         x = self.conv1(x)
