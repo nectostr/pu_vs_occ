@@ -3,7 +3,7 @@ from .cifar10 import CIFAR10_Dataset
 from .synthetic import Synthetic_Dataset
 from .chestXray import XRay_Dataset
 
-def load_dataset(dataset_name, data_path, normal_class):
+def load_dataset(dataset_name, data_path, normal_class, in_memory=False):
     """Loads the dataset."""
 
     # TODO: added synth
@@ -22,5 +22,5 @@ def load_dataset(dataset_name, data_path, normal_class):
         dataset = Synthetic_Dataset(root=data_path, normal_class=normal_class)
 
     elif dataset_name == 'xray224':
-        dataset = XRay_Dataset(root=data_path, normal_class=normal_class)
+        dataset = XRay_Dataset(root=data_path, normal_class=normal_class, in_memory=in_memory)
     return dataset
