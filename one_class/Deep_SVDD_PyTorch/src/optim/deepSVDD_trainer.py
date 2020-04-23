@@ -2,7 +2,7 @@ from base.base_trainer import BaseTrainer
 from base.base_dataset import BaseADDataset
 from base.base_net import BaseNet
 from torch.utils.data.dataloader import DataLoader
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score
 
 import logging
 import time
@@ -149,8 +149,8 @@ class DeepSVDDTrainer(BaseTrainer):
         labels = np.array(labels)
         scores = np.array(scores)
 
-        self.test_auc = roc_auc_score(labels, scores)
-        logger.info('Test set AUC: {:.2f}%'.format(100. * self.test_auc))
+        self.test_mere = f1_score(labels, scores)
+        logger.info('Test set: {:.2f}%'.format(100. * self.test_auc))
 
         logger.info('Finished testing.')
 
