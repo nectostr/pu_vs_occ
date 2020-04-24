@@ -35,6 +35,7 @@ class XRAY_Net(BaseNet):
         x = F.leaky_relu(self.conv4(x))
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
+        x = F.softmax(x)
         return x
 
 

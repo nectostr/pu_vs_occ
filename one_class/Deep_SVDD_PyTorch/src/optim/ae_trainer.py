@@ -1,7 +1,7 @@
 from base.base_trainer import BaseTrainer
 from base.base_dataset import BaseADDataset
 from base.base_net import BaseNet
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score
 
 import logging
 import time
@@ -113,8 +113,9 @@ class AETrainer(BaseTrainer):
         labels = np.array(labels)
         scores = np.array(scores)
 
-        auc = roc_auc_score(labels, scores)
-        logger.info('Test set AUC: {:.2f}%'.format(100. * auc))
+        # auc = roc_auc_score(labels, scores)
+        # f1 = f1_score(labels, scores)
+        # logger.info('Test set : {:.2f}%'.format(100. * auc))
 
         test_time = time.time() - start_time
         logger.info('Autoencoder testing time: %.3f' % test_time)

@@ -144,13 +144,13 @@ class DeepSVDDTrainer(BaseTrainer):
 
         self.test_scores = idx_label_score
 
-        # Compute AUC
+        # Compute
         _, labels, scores = zip(*idx_label_score)
         labels = np.array(labels)
         scores = np.array(scores)
 
-        self.test_mere = f1_score(labels, scores)
-        logger.info('Test set: {:.2f}%'.format(100. * self.test_auc))
+        self.test_mere = f1_score(labels, scores.round())
+        logger.info('Test set: {:.2f}%'.format(100. * self.test_mere))
 
         logger.info('Finished testing.')
 
