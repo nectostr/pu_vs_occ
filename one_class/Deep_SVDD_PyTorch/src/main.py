@@ -124,8 +124,11 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, ob
     deep_SVDD.set_network(net_name)
     # If specified, load Deep SVDD model (radius R, center c, network weights, and possibly autoencoder weights)
     if load_model:
-        deep_SVDD.load_model(model_path=load_model, load_ae=True)
-        logger.info('Loading model from %s.' % load_model)
+        # отсебятина, что бы прогрузить только предтраиненый автоэнкодер
+        # deep_SVDD.load_model(model_path=load_model, load_ae=True)
+        # logger.info('Loading model from %s.' % load_model)
+    # if load_ae:
+        deep_SVDD.load_ae_model(load_model)
 
     logger.info('Pretraining: %s' % pretrain)
     if pretrain:

@@ -13,7 +13,7 @@ class XRAY_Net(BaseNet):
         features_lvl1 = 16
         features_lvl2 = 32
         features_lvl3 = 64
-        self.rep_dim = 32
+        self.rep_dim = 1024
 
         # Encoder (must match the Deep SVDD network above)
         self.conv1 = nn.Conv2d(1, features_lvl1, kernel_size=5, stride=3)
@@ -35,7 +35,6 @@ class XRAY_Net(BaseNet):
         x = F.leaky_relu(self.conv4(x))
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
-        x = F.softmax(x)
         return x
 
 
@@ -44,7 +43,7 @@ class XRAY_Net_Autoencoder(BaseNet):
     def __init__(self):
         super().__init__()
 
-        self.rep_dim = 32
+        self.rep_dim = 1024
 
         features_lvl1 = 16
         features_lvl2 = 32

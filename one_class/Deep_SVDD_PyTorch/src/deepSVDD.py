@@ -123,6 +123,10 @@ class DeepSVDD(object):
                     'net_dict': net_dict,
                     'ae_net_dict': ae_net_dict}, export_model)
 
+    def load_ae_model(self, model_path):
+        self.ae_net = build_autoencoder(self.net_name)
+        self.ae_net.load_state_dict(torch.load(model_path))
+
     def load_model(self, model_path, load_ae=False):
         """Load Deep SVDD model from model_path."""
 

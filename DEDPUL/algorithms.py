@@ -21,7 +21,15 @@ from DEDPUL.utils import *
 from DEDPUL.KMPE import *
 from DEDPUL.NN_functions import *
 
+def logger_start(f):
+    def inner(*a, **kw):
+        print(f.__name__, "started")
+        r = f(*a, **kw)
+        print(f.__name__, "finished")
+        return r
+    return inner
 
+@logger_start
 def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid_layers=1,
                       random_state=None, training_mode='standard', alpha=None, train_nn_options=None,
                       all_conv=False, bayes=False, epohs=10, text=False):
@@ -81,9 +89,10 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
                     preds[i, test_index], means[i, test_index], variances[i, test_index] = \
                         pred.detach().numpy().flatten(), mean.detach().numpy().flatten(), var.detach().numpy().flatten()
                 else:
-                    preds[i, test_index] = discriminator(
+                    ress = discriminator(
                         torch.as_tensor(test_data, dtype=torch.float32)).detach().numpy().flatten()
 
+                    preds[i, test_index] = ress
             if random_state is not None:
                 random_state += 1
         preds = preds.mean(axis=0)
@@ -98,7 +107,7 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
     else:
         return preds
 
-
+@logger_start
 def estimate_preds_cv_keras(data, target, n_networks=1, n_layers=1, n_hid=32, lr=10**-5, random_state=42,
                             cv=3, batch_size=128, n_epochs=500, n_early_stop=10, alpha=None, verbose=False):
     es = EarlyStopping(monitor='val_loss', patience=n_early_stop, verbose=0, restore_best_weights=True)
@@ -118,7 +127,7 @@ def estimate_preds_cv_keras(data, target, n_networks=1, n_layers=1, n_hid=32, lr
     # preds = np.median(preds, axis=0)
     return preds
 
-
+@logger_start
 def estimate_preds_cv_catboost(data, target, random_state=None, n_networks=1, catboost_params=None,
                                cv=3, n_early_stop=10, alpha=None, verbose=False):
     if catboost_params is None:
@@ -139,7 +148,7 @@ def estimate_preds_cv_catboost(data, target, random_state=None, n_networks=1, ca
     # preds = np.median(preds, axis=0)
     return preds
 
-
+@logger_start
 def estimate_preds_cv_sklearn(data, target, model, random_state=None, n_networks=1, params=None, cv=3):
     if params is None:
         params = {}
@@ -159,7 +168,7 @@ def estimate_preds_cv_sklearn(data, target, model, random_state=None, n_networks
     # preds = np.median(preds, axis=0)
     return preds
 
-
+@logger_start
 def estimate_diff(preds, target, bw_mix=0.05, bw_pos=0.1, kde_mode='logit', threshold=None, k_neighbours=None,
                   tune=False, MT=True, MT_coef=0.2, decay_MT_coef=False, kde_type='kde',
                   n_gauss_mix=2, n_gauss_pos=1, bins_mix=200, bins_pos=100):
@@ -261,7 +270,7 @@ def estimate_diff(preds, target, bw_mix=0.05, bw_pos=0.1, kde_mode='logit', thre
 
     return diff
 
-
+@logger_start
 def estimate_diff_bayes(means, variances, target, threshold=None, k_neighbours=None):
     if threshold == 'mid':
         threshold = means[target == 1].mean() / 2 + means[target == 0].mean() / 2
@@ -301,7 +310,7 @@ def estimate_diff_bayes(means, variances, target, threshold=None, k_neighbours=N
 
     return diff
 
-
+@logger_start
 def estimate_poster_dedpul(diff, alpha=None, quantile=0.05, alpha_as_mean_poster=False, max_it=100, **kwargs):
     """
     Estimates posteriors and priors alpha (if not provided) of N in U with dedpul method
@@ -353,7 +362,7 @@ def estimate_poster_dedpul(diff, alpha=None, quantile=0.05, alpha_as_mean_poster
         poster[poster < 0] = 0
     return alpha, poster
 
-
+@logger_start
 def estimate_poster_en(preds, target, alpha=None, estimator='e1', quantile=0.05, **kwargs):
     """
     Estimates posteriors and priors alpha (if not provided) of N in U with en [Elkan-Noto, 2008] method
@@ -379,7 +388,7 @@ def estimate_poster_en(preds, target, alpha=None, estimator='e1', quantile=0.05,
     poster[poster < 0] = 0
     return alpha, poster
 
-
+@logger_start
 def estimate_poster_em(diff=None, preds=None, target=None, mode='dedpul', converge=True, tol=10**-5,
                        max_iterations=1000, nonconverge=True, step=0.001, max_diff=0.05, plot=False, disp=False,
                        alpha=None, alpha_as_mean_poster=True, **kwargs):
@@ -477,7 +486,7 @@ def estimate_poster_em(diff=None, preds=None, target=None, mode='dedpul', conver
             print('didn\'t converge')
         return None, None
 
-
+@logger_start
 def estimate_poster_cv(df, target, estimator='dedpul', bayes=False, alpha=None, estimate_poster_options=None,
                        estimate_diff_options=None, estimate_preds_cv_options=None, train_nn_options=None):
     """
