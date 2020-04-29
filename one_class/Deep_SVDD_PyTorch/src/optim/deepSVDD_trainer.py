@@ -149,8 +149,6 @@ class DeepSVDDTrainer(BaseTrainer):
         labels = np.array(labels)
         scores = np.array(scores)
 
-        self.test_mere = f1_score(labels, scores.round())
-        logger.info('Test set: {:.2f}%'.format(100. * self.test_mere))
         self.test_auc = roc_auc_score(labels, scores)
         logger.info('Test set auc: {:.2f}%'.format(100. * self.test_auc))
 
