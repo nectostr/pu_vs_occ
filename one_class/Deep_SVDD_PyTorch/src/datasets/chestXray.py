@@ -18,24 +18,23 @@ class XRay_Dataset(TorchvisionDataset):
         super().__init__(root)
 
         self.n_classes = 2  # 0: normal, 1: outlier
-        self.normal_classes = 0
+        self.normal_classes = normal_class
         self.outlier_classes = [1,]
 
 
-
-        train_set = MyXRay(root=self.root, train=True, in_memory=True)
+        train_set = MyXRay(root=self.root, train=True, in_memory=in_memory, normal_class=normal_class)
         # Subset train_set to normal class
         # train_idx_normal = get_target_label_idx(train_set.train_labels.clone().data.cpu().numpy(), self.normal_classes)
-        self.train_set = Subset(train_set, (0,))
-        # self.train_set = train_set
+        # self.train_set = Subset(train_set, (0,))
+        self.train_set = train_set
 
-        self.test_set = MyXRay(root=self.root, train=False, in_memory=True)
+        self.test_set = MyXRay(root=self.root, train=False, in_memory=in_memory)
 
 # наследования
 class MyXRay(VisionDataset):
     """Torchvision MNIST class with patch of __getitem__ method to also return the index of a data sample."""
 
-    def __init__(self, root, train, in_memory=False):
+    def __init__(self, root, train, in_memory=False, normal_class=0):
         # TODO: not shure about inheritance. Do I need it at all
         super().__init__(root)
         self.train = train
@@ -56,6 +55,16 @@ class MyXRay(VisionDataset):
                 del data[i]
             else:
                 i += 1
+
+        #### If train - we do not need anything then normal clasd - replace subset above
+        i = 0
+        while i < len(data):
+            if data[i][1] != normal_class:
+                del data[i]
+            else:
+                i+=1
+        ##### End of sebset
+
 
         logging.info(f"{'train' if train else 'test'} dataset has {len(data)} len")
 
