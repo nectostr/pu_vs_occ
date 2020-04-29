@@ -56,14 +56,15 @@ class MyXRay(VisionDataset):
             else:
                 i += 1
 
-        #### If train - we do not need anything then normal clasd - replace subset above
-        i = 0
-        while i < len(data):
-            if data[i][1] != normal_class:
-                del data[i]
-            else:
-                i+=1
-        ##### End of sebset
+        if train:
+            #### If train - we do not need anything then normal clasd - replace subset above
+            i = 0
+            while i < len(data):
+                if data[i][1] != normal_class:
+                    del data[i]
+                else:
+                    i+=1
+            ##### End of sebset
 
 
         logging.info(f"{'train' if train else 'test'} dataset has {len(data)} len")
