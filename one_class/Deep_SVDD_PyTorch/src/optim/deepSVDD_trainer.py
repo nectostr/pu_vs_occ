@@ -36,7 +36,7 @@ class DeepSVDDTrainer(BaseTrainer):
         self.test_time = None
         self.test_scores = None
 
-    def train(self, dataset: BaseADDataset, net: BaseNet):
+    def train(self, dataset: BaseADDataset, net: BaseNet, early_stop=False):
         logger = logging.getLogger()
 
         # Set device for network
@@ -109,6 +109,9 @@ class DeepSVDDTrainer(BaseTrainer):
             for param_group in optimizer.param_groups:
                 print("Current learning rate is: {}".format(param_group['lr']))
 
+            if early_stop:
+                if loss_epoch < early_stop:
+                    break
         self.train_time = time.time() - start_time
         logger.info('Training time: %.3f' % self.train_time)
 
