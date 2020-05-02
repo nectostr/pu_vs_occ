@@ -54,7 +54,7 @@ class DeepSVDDTrainer(BaseTrainer):
         # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
         #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10)
         #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, 0.1, last_epoch=-1)
+        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, 0.0001, last_epoch=-1)
 
         # Initialize hypersphere center c (if c not loaded)
         if self.c is None:
@@ -94,9 +94,8 @@ class DeepSVDDTrainer(BaseTrainer):
                 else:
                     loss = torch.mean(dist)
                 loss.backward()
-                scheduler.step(epoch)
                 optimizer.step()
-
+                scheduler.step(epoch)
                 # Update hypersphere radius R on mini-batch distances
                 if (self.objective == 'soft-boundary') and (epoch >= self.warm_up_n_epochs):
                     self.R.data = torch.tensor(get_radius(dist, self.nu), device=self.device)
