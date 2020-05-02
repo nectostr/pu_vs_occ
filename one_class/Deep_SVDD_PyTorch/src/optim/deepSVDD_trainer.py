@@ -63,6 +63,7 @@ class DeepSVDDTrainer(BaseTrainer):
         statistics = [[],[]]
 
         # Training
+        early_stop and logger.info(f'Early stop is {early_stop} loss')
         logger.info('Starting training...')
         start_time = time.time()
         net.train()
@@ -110,7 +111,7 @@ class DeepSVDDTrainer(BaseTrainer):
                 print("Current learning rate is: {}".format(param_group['lr']))
                 statistics[1].append(param_group['lr'])
             if early_stop:
-                if loss_epoch / n_batches < early_stop:
+                if (loss_epoch / n_batches) < early_stop:
                     break
         self.train_time = time.time() - start_time
         logger.info('Training time: %.3f' % self.train_time)
