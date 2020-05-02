@@ -53,7 +53,8 @@ class DeepSVDDTrainer(BaseTrainer):
         #TODO: turned off - think about turn it on
         # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
         #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
+        #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
+        scheduler = optim.ExponentialLR(optimizer, 0.1, last_epoch=-1)
 
         # Initialize hypersphere center c (if c not loaded)
         if self.c is None:
