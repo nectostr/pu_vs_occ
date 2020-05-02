@@ -27,8 +27,10 @@ class XRay_Dataset(TorchvisionDataset):
         # train_idx_normal = get_target_label_idx(train_set.train_labels.clone().data.cpu().numpy(), self.normal_classes)
         # self.train_set = Subset(train_set, (0,))
         self.train_set = train_set
+        print("tweikwflkd",len(train_set))
 
         self.test_set = MyXRay(root=self.root, train=False, in_memory=in_memory)
+
 
 # наследования
 class MyXRay(VisionDataset):

@@ -4,10 +4,10 @@ import logging
 import random
 import numpy as np
 
-from .utils.config import Config
-from .utils.visualization.plot_images_grid import plot_images_grid
-from .deepSVDD import DeepSVDD
-from .datasets.main import load_dataset
+from utils.config import Config
+from utils.visualization.plot_images_grid import plot_images_grid
+from deepSVDD import DeepSVDD
+from datasets.main import load_dataset
 
 
 ################################################################################
@@ -162,6 +162,7 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, ob
 
     # TODO: 4. Train
     # Train model on dataset
+
     deep_SVDD.train(dataset,
                     optimizer_name=cfg.settings['optimizer_name'],
                     lr=cfg.settings['lr'],
@@ -181,7 +182,7 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, ob
     indices, labels, scores = np.array(indices), np.array(labels), np.array(scores)
     idx_sorted = indices[(labels == 0).reshape(indices.shape)][np.argsort(scores[(labels == 0).reshape(scores.shape)])]  # sorted from lowest to highest anomaly score
 
-    if dataset_name in ('mnist', 'cifar10','xray224'):
+    if dataset_name in ('mnist', 'cifar10'):
 
         if dataset_name == 'mnist':
             X_normals = dataset.test_set.test_data[idx_sorted[:32], ...].unsqueeze(1)

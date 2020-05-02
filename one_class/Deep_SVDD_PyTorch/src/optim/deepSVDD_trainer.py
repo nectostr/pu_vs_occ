@@ -51,7 +51,8 @@ class DeepSVDDTrainer(BaseTrainer):
 
         # Set learning rate scheduler
         #TODO: turned off - think about turn it on
-        #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
+        # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10)
 
         # Initialize hypersphere center c (if c not loaded)
         if self.c is None:
@@ -65,8 +66,8 @@ class DeepSVDDTrainer(BaseTrainer):
         net.train()
         for epoch in range(self.n_epochs):
 
-            #scheduler.step() look above
-            #if epoch in self.lr_milestones:
+
+            # if epoch in self.lr_milestones:
             #    logger.info('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
 
             loss_epoch = 0.0
@@ -88,6 +89,7 @@ class DeepSVDDTrainer(BaseTrainer):
                 else:
                     loss = torch.mean(dist)
                 loss.backward()
+                scheduler.step(epoch)
                 optimizer.step()
 
                 # Update hypersphere radius R on mini-batch distances
@@ -101,7 +103,8 @@ class DeepSVDDTrainer(BaseTrainer):
             epoch_train_time = time.time() - epoch_start_time
             logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}'
                         .format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch / n_batches))
-
+            for param_group in optimizer.param_groups:
+                print("Current learning rate is: {}".format(param_group['lr']))
         self.train_time = time.time() - start_time
         logger.info('Training time: %.3f' % self.train_time)
 
