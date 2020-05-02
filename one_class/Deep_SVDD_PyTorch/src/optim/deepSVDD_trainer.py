@@ -55,7 +55,7 @@ class DeepSVDDTrainer(BaseTrainer):
         #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10)
         #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
         #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, 0.7, last_epoch=50)
-        l1 = lambda epoch: int(epoch >= 10) * self.lr/epoch + int(epoch < 10) * self.lr
+        l1 = lambda epoch: int(epoch >= 10) * self.lr/(epoch+1) + int(epoch < 10) * self.lr
 
         scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=l1)
 
