@@ -60,7 +60,7 @@ class DeepSVDDTrainer(BaseTrainer):
             self.c = self.init_center_c(train_loader, net)
             logger.info('Center c initialized.')
 
-        losses = []
+        statistics = [[],[]]
 
         # Training
         logger.info('Starting training...')
@@ -102,22 +102,22 @@ class DeepSVDDTrainer(BaseTrainer):
                 n_batches += 1
 
             # log epoch statistics
-            losses.append(loss_epoch)
+            statistics[0].append(loss_epoch / n_batches)
             epoch_train_time = time.time() - epoch_start_time
             logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}'
                         .format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch / n_batches))
             for param_group in optimizer.param_groups:
                 print("Current learning rate is: {}".format(param_group['lr']))
-
+                statistics[1].append(param_group['lr'])
             if early_stop:
-                if loss_epoch < early_stop:
+                if loss_epoch / n_batches < early_stop:
                     break
         self.train_time = time.time() - start_time
         logger.info('Training time: %.3f' % self.train_time)
 
         logger.info('Finished training.')
 
-        return net, losses
+        return net, statistics
 
     def test(self, dataset: BaseADDataset, net: BaseNet):
         logger = logging.getLogger()
