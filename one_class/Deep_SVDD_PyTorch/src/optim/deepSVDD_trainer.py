@@ -57,7 +57,7 @@ class DeepSVDDTrainer(BaseTrainer):
         #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, 0.7, last_epoch=50)
         l1 = lambda epoch: (int(epoch >= 30) * self.lr/(epoch+1) + int(epoch < 30) * self.lr)
 
-        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=l1, last_epoch=100)
+        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=l1)
 
         # Initialize hypersphere center c (if c not loaded)
         if self.c is None:
