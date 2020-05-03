@@ -52,12 +52,11 @@ class DeepSVDDTrainer(BaseTrainer):
         # Set learning rate scheduler
         #TODO: turned off - think about turn it on
         # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
-        #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10, 0.00001, -1)
         #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
         #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, 0.7, last_epoch=50)
-        l1 = lambda epoch: (int(epoch >= 30) * self.lr/(epoch+1) + int(epoch < 30) * self.lr)*10000
-
-        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=l1)
+        #l1 = lambda epoch: (int(epoch >= 30) * self.lr/(epoch+1) + int(epoch < 30) * self.lr)*10000
+        #scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=l1)
 
         # Initialize hypersphere center c (if c not loaded)
         if self.c is None:
