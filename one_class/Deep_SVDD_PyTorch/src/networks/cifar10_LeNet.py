@@ -87,3 +87,8 @@ class CIFAR10_LeNet_Autoencoder(BaseNet):
         x = self.deconv4(x)
         x = torch.sigmoid(x)
         return x
+
+    def get_loss(self,inputs, outputs):
+        scores = torch.sum((outputs - inputs) ** 2, dim=tuple(range(1, outputs.dim())))
+        loss = torch.mean(scores)
+        return loss

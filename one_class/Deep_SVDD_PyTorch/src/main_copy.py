@@ -6,7 +6,6 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-
 from utils.config import Config
 from utils.visualization.plot_images_grid import plot_images_grid
 from deepSVDD import DeepSVDD
@@ -40,7 +39,7 @@ from datasets.main import load_dataset
 @click.option('--n_epochs', type=int, default=50, help='Number of epochs to train.')
 @click.option('--lr_milestone', type=int, default=0, multiple=True,
               help='Lr scheduler milestones at which lr is multiplied by 0.1. Can be multiple and must be increasing.')
-@click.option('--batch_size', type=int, default=128, help='Batch size for mini-batch training.')
+@click.option('--batch_size', type=int, default=54, help='Batch size for mini-batch training.')
 @click.option('--weight_decay', type=float, default=1e-6,
               help='Weight decay (L2 penalty) hyperparameter for Deep SVDD objective.')
 @click.option('--pretrain', type=bool, default=True,
@@ -121,75 +120,83 @@ def main(dataset_name, net_name, xp_path, data_path, load_config, load_model, ob
     # TODO: 1. Load Data
     dataset = load_dataset(dataset_name, data_path, normal_class)
 
-    # TODO: 2. Init model
-    # Initialize DeepSVDD model and set neural network \phi
-    deep_SVDD = DeepSVDD(cfg.settings['objective'], cfg.settings['nu'])
-    if net_name == "synth_net":
-        deep_SVDD.set_network(net_name, dataset.train_set.data.shape[1])
-    else:
-        deep_SVDD.set_network(net_name)
-    # If specified, load Deep SVDD model (radius R, center c, network weights, and possibly autoencoder weights)
-    if load_model:
-        # отсебятина, что бы прогрузить только предтраиненый автоэнкодер
-        # deep_SVDD.load_model(model_path=load_model, load_ae=True)
-        # logger.debug('Loading model from %s.' % load_model)
-    # if load_ae:
-        deep_SVDD.load_ae_model(load_model)
+    for i in range(15):
+        # TODO: 2. Init model
+        # Initialize DeepSVDD model and set neural network \phi
+        deep_SVDD = DeepSVDD(cfg.settings['objective'], cfg.settings['nu'])
+        if net_name == "synth_net":
+            deep_SVDD.set_network(net_name, dataset.train_set.data.shape[1])
+        else:
+            deep_SVDD.set_network(net_name)
+        # If specified, load Deep SVDD model (radius R, center c, network weights, and possibly autoencoder weights)
+        if load_model:
+            # отсебятина, что бы прогрузить только предтраиненый автоэнкодер
+            # deep_SVDD.load_model(model_path=load_model, load_ae=True)
+            # logger.debug('Loading model from %s.' % load_model)
+        # if load_ae:
+            deep_SVDD.load_ae_model(load_model)
 
-    logger.debug('Pretraining: %s' % pretrain)
-    if pretrain:
-        # Log pretraining details
-        logger.debug('Pretraining optimizer: %s' % cfg.settings['ae_optimizer_name'])
-        logger.debug('Pretraining learning rate: %g' % cfg.settings['ae_lr'])
-        logger.debug('Pretraining epochs: %d' % cfg.settings['ae_n_epochs'])
-        logger.debug('Pretraining learning rate scheduler milestones: %s' % (cfg.settings['ae_lr_milestone'],))
-        logger.debug('Pretraining batch size: %d' % cfg.settings['ae_batch_size'])
-        logger.debug('Pretraining weight decay: %g' % cfg.settings['ae_weight_decay'])
+        logger.debug('Pretraining: %s' % pretrain)
 
-        # TODO: 3. Pretrain
-        # Pretrain model on dataset (via autoencoder)
-        deep_SVDD.pretrain(dataset,
-                           optimizer_name=cfg.settings['ae_optimizer_name'],
-                           lr=cfg.settings['ae_lr'],
-                           n_epochs=cfg.settings['ae_n_epochs'],
-                           lr_milestones=cfg.settings['ae_lr_milestone'],
-                           batch_size=cfg.settings['ae_batch_size'],
-                           weight_decay=cfg.settings['ae_weight_decay'],
-                           device=device,
-                           n_jobs_dataloader=n_jobs_dataloader)
+        # TODO: 4. Train
+        # Train model on dataset
 
-    # Log training details
-    logger.debug('Training optimizer: %s' % cfg.settings['optimizer_name'])
-    logger.debug('Training learning rate: %g' % cfg.settings['lr'])
-    logger.debug('Training epochs: %d' % cfg.settings['n_epochs'])
-    logger.debug('Training learning rate scheduler milestones: %s' % (cfg.settings['lr_milestone'],))
-    logger.debug('Training batch size: %d' % cfg.settings['batch_size'])
-    logger.debug('Training weight decay: %g' % cfg.settings['weight_decay'])
+        if pretrain:
+            # Log pretraining details
+            logger.debug('Pretraining optimizer: %s' % cfg.settings['ae_optimizer_name'])
+            logger.debug('Pretraining learning rate: %g' % cfg.settings['ae_lr'])
+            logger.debug('Pretraining epochs: %d' % cfg.settings['ae_n_epochs'])
+            logger.debug('Pretraining learning rate scheduler milestones: %s' % (cfg.settings['ae_lr_milestone'],))
+            logger.debug('Pretraining batch size: %d' % cfg.settings['ae_batch_size'])
+            logger.debug('Pretraining weight decay: %g' % cfg.settings['ae_weight_decay'])
 
-    # TODO: 4. Train
-    # Train model on dataset
+            # TODO: 3. Pretrain
+            # Pretrain model on dataset (via autoencoder)
+            deep_SVDD.pretrain(dataset,
+                               optimizer_name=cfg.settings['ae_optimizer_name'],
+                               lr=cfg.settings['ae_lr'],
+                               n_epochs=cfg.settings['ae_n_epochs'],
+                               lr_milestones=cfg.settings['ae_lr_milestone'],
+                               batch_size=cfg.settings['ae_batch_size'],
+                               weight_decay=cfg.settings['ae_weight_decay'],
+                               device=device,
+                               n_jobs_dataloader=n_jobs_dataloader)
 
-    deep_SVDD.train(dataset,
-                    optimizer_name=cfg.settings['optimizer_name'],
-                    lr=cfg.settings['lr'],
-                    n_epochs=cfg.settings['n_epochs'],
-                    lr_milestones=cfg.settings['lr_milestone'],
-                    batch_size=cfg.settings['batch_size'],
-                    weight_decay=cfg.settings['weight_decay'],
-                    device=device,
-                    n_jobs_dataloader=n_jobs_dataloader,
-                    sheduler=not net_name=="synth_net")
 
-    # TODO: 4. Test
-    # Test model
-    deep_SVDD.test(dataset, device=device, n_jobs_dataloader=n_jobs_dataloader)
+
+        # Log training details
+        logger.debug('Training optimizer: %s' % cfg.settings['optimizer_name'])
+        logger.debug('Training learning rate: %g' % cfg.settings['lr'])
+        logger.debug('Training epochs: %d' % cfg.settings['n_epochs'])
+        logger.debug('Training learning rate scheduler milestones: %s' % (cfg.settings['lr_milestone'],))
+        logger.debug('Training batch size: %d' % cfg.settings['batch_size'])
+        logger.debug('Training weight decay: %g' % cfg.settings['weight_decay'])
+
+        for j in range(1,4,5):
+            deep_SVDD.init_network_weights_from_pretraining()
+            deep_SVDD.train(dataset,
+                        optimizer_name=cfg.settings['optimizer_name'],
+                        lr=cfg.settings['lr'],
+                        n_epochs=cfg.settings['n_epochs'],
+                        lr_milestones=cfg.settings['lr_milestone'],
+                        batch_size=cfg.settings['batch_size'],
+                        weight_decay=cfg.settings['weight_decay'],
+                        device=device,
+                        n_jobs_dataloader=n_jobs_dataloader,
+                        sheduler=not net_name=="synth_net")
+
+            # TODO: 4. Test
+            # Test model
+            deep_SVDD.test(dataset, device=device, n_jobs_dataloader=n_jobs_dataloader)
+
+        logging.info("__________________________________________________")
 
     # Plot most anomalous and most normal (within-class) test samples
     indices, labels, scores = zip(*deep_SVDD.results['test_scores'])
     indices, labels, scores = np.array(indices), np.array(labels), np.array(scores)
     idx_sorted = indices[(labels == 0).reshape(indices.shape)][np.argsort(scores[(labels == 0).reshape(scores.shape)])]  # sorted from lowest to highest anomaly score
 
-    if dataset_name in ('mnist', 'cifar10'):
+    if dataset_name in ('mnist', 'cifar10','xray224'):
 
         if dataset_name == 'mnist':
             X_normals = dataset.test_set.test_data[idx_sorted[:32], ...].unsqueeze(1)

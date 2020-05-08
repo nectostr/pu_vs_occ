@@ -7,7 +7,7 @@ from .xray_net import XRAY_Net, XRAY_Net_Autoencoder
 implemented_networks = ('mnist_LeNet', 'cifar10_LeNet',
                         'cifar10_LeNet_ELU', 'synth_net', "xray_Net")
 
-def build_network(net_name):
+def build_network(net_name, input_dim=None):
     """Builds the neural network."""
 
     # TODO: Added new implemented network net
@@ -29,7 +29,7 @@ def build_network(net_name):
         net = CIFAR10_LeNet_ELU()
 
     elif net_name == 'synth_net':
-        net = Synth_Net()
+        net = Synth_Net() if input_dim is None else Synth_Net(input_dim)
 
     elif net_name == 'xray_Net':
         net = XRAY_Net()
@@ -37,7 +37,7 @@ def build_network(net_name):
     return net
 
 
-def build_autoencoder(net_name):
+def build_autoencoder(net_name, input_dim=None):
     """Builds the corresponding autoencoder network."""
 
     global implemented_networks
@@ -55,7 +55,9 @@ def build_autoencoder(net_name):
         ae_net = CIFAR10_LeNet_ELU_Autoencoder()
 
     elif net_name == 'synth_net':
-        ae_net = Synth_Net_Autoencoder()
+        ae_net = Synth_Net_Autoencoder() \
+            if input_dim is None \
+            else Synth_Net_Autoencoder(input_dim)
 
     elif net_name == 'xray_Net':
         ae_net = XRAY_Net_Autoencoder()

@@ -29,10 +29,10 @@ def logger_start(f):
         return r
     return inner
 
-@logger_start
+#@logger_start
 def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid_layers=1,
                       random_state=None, training_mode='standard', alpha=None, train_nn_options=None,
-                      all_conv=False, bayes=False, epohs=10, text=False):
+                      all_conv=False, bayes=False, epohs=10, text=False, get_non_t_class=False):
     """
     Estimates posterior probability y(x) of belonging to U rather than P (ignoring relative sizes of U and P);
         predictions are the average of an ensemble of n_networks neural networks;
@@ -100,6 +100,8 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
         import text_networks as tn
         preds = tn.get_text_result(df)
 
+    if get_non_t_class:
+        return preds, discriminator
 
     if bayes:
         means, variances = means.mean(axis=0), variances.mean(axis=0)
@@ -107,7 +109,7 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
     else:
         return preds
 
-@logger_start
+#@logger_start
 def estimate_preds_cv_keras(data, target, n_networks=1, n_layers=1, n_hid=32, lr=10**-5, random_state=42,
                             cv=3, batch_size=128, n_epochs=500, n_early_stop=10, alpha=None, verbose=False):
     es = EarlyStopping(monitor='val_loss', patience=n_early_stop, verbose=0, restore_best_weights=True)
@@ -127,7 +129,7 @@ def estimate_preds_cv_keras(data, target, n_networks=1, n_layers=1, n_hid=32, lr
     # preds = np.median(preds, axis=0)
     return preds
 
-@logger_start
+#@logger_start
 def estimate_preds_cv_catboost(data, target, random_state=None, n_networks=1, catboost_params=None,
                                cv=3, n_early_stop=10, alpha=None, verbose=False):
     if catboost_params is None:
@@ -148,7 +150,7 @@ def estimate_preds_cv_catboost(data, target, random_state=None, n_networks=1, ca
     # preds = np.median(preds, axis=0)
     return preds
 
-@logger_start
+#@logger_start
 def estimate_preds_cv_sklearn(data, target, model, random_state=None, n_networks=1, params=None, cv=3):
     if params is None:
         params = {}
@@ -168,7 +170,7 @@ def estimate_preds_cv_sklearn(data, target, model, random_state=None, n_networks
     # preds = np.median(preds, axis=0)
     return preds
 
-@logger_start
+#@logger_start
 def estimate_diff(preds, target, bw_mix=0.05, bw_pos=0.1, kde_mode='logit', threshold=None, k_neighbours=None,
                   tune=False, MT=True, MT_coef=0.2, decay_MT_coef=False, kde_type='kde',
                   n_gauss_mix=2, n_gauss_pos=1, bins_mix=200, bins_pos=100):
@@ -270,7 +272,7 @@ def estimate_diff(preds, target, bw_mix=0.05, bw_pos=0.1, kde_mode='logit', thre
 
     return diff
 
-@logger_start
+#@logger_start
 def estimate_diff_bayes(means, variances, target, threshold=None, k_neighbours=None):
     if threshold == 'mid':
         threshold = means[target == 1].mean() / 2 + means[target == 0].mean() / 2
@@ -310,7 +312,7 @@ def estimate_diff_bayes(means, variances, target, threshold=None, k_neighbours=N
 
     return diff
 
-@logger_start
+#@logger_start
 def estimate_poster_dedpul(diff, alpha=None, quantile=0.05, alpha_as_mean_poster=False, max_it=100, **kwargs):
     """
     Estimates posteriors and priors alpha (if not provided) of N in U with dedpul method
@@ -362,7 +364,7 @@ def estimate_poster_dedpul(diff, alpha=None, quantile=0.05, alpha_as_mean_poster
         poster[poster < 0] = 0
     return alpha, poster
 
-@logger_start
+#@logger_start
 def estimate_poster_en(preds, target, alpha=None, estimator='e1', quantile=0.05, **kwargs):
     """
     Estimates posteriors and priors alpha (if not provided) of N in U with en [Elkan-Noto, 2008] method
@@ -388,7 +390,7 @@ def estimate_poster_en(preds, target, alpha=None, estimator='e1', quantile=0.05,
     poster[poster < 0] = 0
     return alpha, poster
 
-@logger_start
+#@logger_start
 def estimate_poster_em(diff=None, preds=None, target=None, mode='dedpul', converge=True, tol=10**-5,
                        max_iterations=1000, nonconverge=True, step=0.001, max_diff=0.05, plot=False, disp=False,
                        alpha=None, alpha_as_mean_poster=True, **kwargs):
@@ -486,9 +488,10 @@ def estimate_poster_em(diff=None, preds=None, target=None, mode='dedpul', conver
             print('didn\'t converge')
         return None, None
 
-@logger_start
+#@logger_start
 def estimate_poster_cv(df, target, estimator='dedpul', bayes=False, alpha=None, estimate_poster_options=None,
-                       estimate_diff_options=None, estimate_preds_cv_options=None, train_nn_options=None):
+                       estimate_diff_options=None, estimate_preds_cv_options=None, train_nn_options=None,
+                       get_non_t_class=False):
     """
     Estimates posteriors and priors alpha (if not provided) of N in U; f_u(x) = (1 - alpha) * f_p(x) + alpha * f_n(x)
     :param df: features, np.array (n_instances, n_features)
@@ -529,7 +532,11 @@ def estimate_poster_cv(df, target, estimator='dedpul', bayes=False, alpha=None, 
         estimate_preds_cv_options = dict()
 
     preds = estimate_preds_cv(df=df, target=target, alpha=alpha, training_mode=training_mode, bayes=False, #TODO was bayes
-                              train_nn_options=train_nn_options, **estimate_preds_cv_options)
+                              train_nn_options=train_nn_options, get_non_t_class=get_non_t_class,
+                              **estimate_preds_cv_options)
+    if get_non_t_class:
+        preds, net = preds
+
     if bayes:
         preds, means, variances = preds
     if estimator in {'dedpul', 'baseline_dedpul', 'ntc_methods'}:
@@ -568,7 +575,10 @@ def estimate_poster_cv(df, target, estimator='dedpul', bayes=False, alpha=None, 
         res['em_en_poster'] = estimate_poster_em(preds=preds, target=target, mode='en', alpha=alpha, **estimate_poster_options)
         return res
 
-    return alpha, poster
+    if get_non_t_class:
+        return alpha, poster, net
+    else:
+        return alpha, poster
 
 
 if __name__ == '__main__':

@@ -177,7 +177,7 @@ def d_loss_nnRE(batch_mix, batch_pos, discriminator, alpha, beta=0., gamma=1., l
     else:
         return -nn_part, gamma
 
-@logger_start
+#@logger_start
 def train_NN(mix_data, pos_data, discriminator, d_optimizer, mix_data_test=None, pos_data_test=None,
              batch_size=None, n_epochs=10, n_batches=20, n_early_stop=5,
              d_scheduler=None, training_mode='standard', disp=False, loss_function=None, nnre_alpha=None,

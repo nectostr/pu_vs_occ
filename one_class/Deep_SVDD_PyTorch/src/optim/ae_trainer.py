@@ -2,6 +2,7 @@ from base.base_trainer import BaseTrainer
 from base.base_dataset import BaseADDataset
 from base.base_net import BaseNet
 from sklearn.metrics import roc_auc_score, f1_score
+from networks.synth_net import Synth_Net_Autoencoder
 
 import logging
 import time
@@ -35,14 +36,14 @@ class AETrainer(BaseTrainer):
         #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
 
         # Training
-        logger.info('Starting pretraining...')
+        logger.info('Starting pretraining autoencoder')
         start_time = time.time()
         ae_net.train()
         for epoch in range(self.n_epochs):
 
             #scheduler.step() TODO: See above
             #if epoch in self.lr_milestones:
-            #    logger.info('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
+            #    logger.debug('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
 
             loss_epoch = 0.0
             n_batches = 0
@@ -57,7 +58,7 @@ class AETrainer(BaseTrainer):
                 # Update network parameters via backpropagation: forward + backward + optimize
                 outputs = ae_net(inputs)
                 scores = torch.sum((outputs - inputs) ** 2, dim=tuple(range(1, outputs.dim())))
-                loss = torch.mean(scores)
+                loss = ae_net.get_loss(inputs, outputs)
                 loss.backward()
                 optimizer.step()
 
@@ -70,8 +71,8 @@ class AETrainer(BaseTrainer):
                         .format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch / n_batches))
 
         pretrain_time = time.time() - start_time
-        logger.info('Pretraining time: %.3f' % pretrain_time)
-        logger.info('Finished pretraining.')
+        logger.debug('Pretraining time: %.3f' % pretrain_time)
+        logger.debug('Finished pretraining.')
 
         return ae_net
 
@@ -85,7 +86,7 @@ class AETrainer(BaseTrainer):
         _, test_loader = dataset.loaders(batch_size=self.batch_size, num_workers=self.n_jobs_dataloader)
 
         # Testing
-        logger.info('Testing autoencoder...')
+        logger.debug('Testing autoencoder...')
         loss_epoch = 0.0
         n_batches = 0
         start_time = time.time()
@@ -97,7 +98,7 @@ class AETrainer(BaseTrainer):
                 inputs = inputs.to(self.device)
                 outputs = ae_net(inputs)
                 scores = torch.sum((outputs - inputs) ** 2, dim=tuple(range(1, outputs.dim())))
-                loss = torch.mean(scores)
+                loss = ae_net.get_loss(inputs, outputs)
 
                 # Save triple of (idx, label, score) in a list
                 idx_label_score += list(zip(idx.cpu().data.numpy().tolist(),
@@ -115,8 +116,8 @@ class AETrainer(BaseTrainer):
 
         # auc = roc_auc_score(labels, scores)
         # f1 = f1_score(labels, scores)
-        # logger.info('Test set : {:.2f}%'.format(100. * auc))
+        # logger.debug('Test set : {:.2f}%'.format(100. * auc))
 
         test_time = time.time() - start_time
-        logger.info('Autoencoder testing time: %.3f' % test_time)
-        logger.info('Finished testing autoencoder.')
+        logger.debug('Autoencoder testing time: %.3f' % test_time)
+        logger.debug('Finished testing autoencoder.')

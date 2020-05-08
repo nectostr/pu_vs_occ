@@ -52,22 +52,21 @@ class DeepSVDD(object):
             'test_scores': None,
         }
 
-    def set_network(self, net_name):
+    def set_network(self, net_name, input_dim=None):
         """Builds the neural network \phi."""
         self.net_name = net_name
-        self.net = build_network(net_name)
+        self.net = build_network(net_name, input_dim)
 
     def train(self, dataset: BaseADDataset, optimizer_name: str = 'adam', lr: float = 0.001, n_epochs: int = 50,
               lr_milestones: tuple = (), batch_size: int = 128, weight_decay: float = 1e-6, device: str = 'cuda',
-              n_jobs_dataloader: int = 0, early_stop=False):
+              n_jobs_dataloader: int = 0, early_stop=False, sheduler=False):
         """Trains the Deep SVDD model on the training data."""
-        print(f"c = {self.c}")
         self.optimizer_name = optimizer_name
         self.trainer = DeepSVDDTrainer(self.objective, self.R, self.c, self.nu, optimizer_name, lr=lr,
                                        n_epochs=n_epochs, lr_milestones=lr_milestones, batch_size=batch_size,
                                        weight_decay=weight_decay, device=device, n_jobs_dataloader=n_jobs_dataloader)
         # Get the model
-        self.net, statistics = self.trainer.train(dataset, self.net, early_stop)
+        self.net, statistics = self.trainer.train(dataset, self.net, early_stop, sheduler)
         self.R = float(self.trainer.R.cpu().data.numpy())  # get float
         self.c = self.trainer.c.cpu().data.numpy().tolist()  # get list
         self.results['train_time'] = self.trainer.train_time
@@ -91,7 +90,7 @@ class DeepSVDD(object):
                  n_jobs_dataloader: int = 0):
         """Pretrains the weights for the Deep SVDD network \phi via autoencoder."""
 
-        self.ae_net = build_autoencoder(self.net_name)
+        self.ae_net = build_autoencoder(self.net_name, dataset.train_set.data.shape[1])
         self.ae_optimizer_name = optimizer_name
         self.ae_trainer = AETrainer(optimizer_name, lr=lr, n_epochs=n_epochs, lr_milestones=lr_milestones,
                                     batch_size=batch_size, weight_decay=weight_decay, device=device,

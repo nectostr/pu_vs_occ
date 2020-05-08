@@ -2,13 +2,14 @@ from base.base_trainer import BaseTrainer
 from base.base_dataset import BaseADDataset
 from base.base_net import BaseNet
 from torch.utils.data.dataloader import DataLoader
-from sklearn.metrics import roc_auc_score, f1_score
+from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score, roc_curve
 
 import logging
 import time
 import torch
 import torch.optim as optim
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 class DeepSVDDTrainer(BaseTrainer):
@@ -36,7 +37,7 @@ class DeepSVDDTrainer(BaseTrainer):
         self.test_time = None
         self.test_scores = None
 
-    def train(self, dataset: BaseADDataset, net: BaseNet, early_stop=False):
+    def train(self, dataset: BaseADDataset, net: BaseNet, early_stop=False, _sheduler=False):
         logger = logging.getLogger()
 
         # Set device for network
@@ -52,7 +53,8 @@ class DeepSVDDTrainer(BaseTrainer):
         # Set learning rate scheduler
         #TODO: turned off - think about turn it on
         # scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.lr_milestones, gamma=0.1)
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10, 0.00001, -1)
+        if _sheduler:
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, 10, 0.00001, -1)
         #scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
         #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, 0.7, last_epoch=50)
         #l1 = lambda epoch: (int(epoch >= 30) * self.lr/(epoch+1) + int(epoch < 30) * self.lr)*10000
@@ -62,20 +64,20 @@ class DeepSVDDTrainer(BaseTrainer):
         if self.c is None:
             logger.info('Initializing center c...')
             self.c = self.init_center_c(train_loader, net)
-            logger.info('Center c initialized.')
+            logger.debug('Center c initialized.')
 
         statistics = [[],[]]
 
         # Training
         early_stop and logger.info(f'Early stop is {early_stop} loss')
-        logger.info('Starting training...')
+        logger.info('Starting training encoder')
         start_time = time.time()
         net.train()
         for epoch in range(self.n_epochs):
 
 
             # if epoch in self.lr_milestones:
-            #    logger.info('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
+            #    logger.debug('  LR scheduler: new learning rate is %g' % float(scheduler.get_lr()[0]))
 
             loss_epoch = 0.0
             n_batches = 0
@@ -97,7 +99,8 @@ class DeepSVDDTrainer(BaseTrainer):
                     loss = torch.mean(dist)
                 loss.backward()
                 optimizer.step()
-                scheduler.step(epoch)
+                # if _sheduler:
+                #     scheduler.step(epoch)
                 # Update hypersphere radius R on mini-batch distances
                 if (self.objective == 'soft-boundary') and (epoch >= self.warm_up_n_epochs):
                     self.R.data = torch.tensor(get_radius(dist, self.nu), device=self.device)
@@ -111,15 +114,15 @@ class DeepSVDDTrainer(BaseTrainer):
             logger.info('  Epoch {}/{}\t Time: {:.3f}\t Loss: {:.8f}'
                         .format(epoch + 1, self.n_epochs, epoch_train_time, loss_epoch / n_batches))
             for param_group in optimizer.param_groups:
-                print("Current learning rate is: {}".format(param_group['lr']))
+                logging.debug("Current learning rate is: {}".format(param_group['lr']))
                 statistics[1].append(param_group['lr'])
             if early_stop:
                 if (loss_epoch / n_batches) < early_stop:
                     break
         self.train_time = time.time() - start_time
-        logger.info('Training time: %.3f' % self.train_time)
+        logger.debug('Training time: %.3f' % self.train_time)
 
-        logger.info('Finished training.')
+        logger.debug('Finished training.')
 
         return net, statistics
 
@@ -133,7 +136,7 @@ class DeepSVDDTrainer(BaseTrainer):
         _, test_loader = dataset.loaders(batch_size=self.batch_size, num_workers=self.n_jobs_dataloader)
 
         # Testing
-        logger.info('Starting testing...')
+        logger.debug('Starting testing...')
         start_time = time.time()
         idx_label_score = []
         net.eval()
@@ -154,7 +157,7 @@ class DeepSVDDTrainer(BaseTrainer):
                                             scores.cpu().data.numpy().tolist()))
 
         self.test_time = time.time() - start_time
-        logger.info('Testing time: %.3f' % self.test_time)
+        logger.debug('Testing time: %.3f' % self.test_time)
 
         self.test_scores = idx_label_score
 
@@ -163,10 +166,19 @@ class DeepSVDDTrainer(BaseTrainer):
         labels = np.array(labels)
         scores = np.array(scores)
 
-        self.test_auc = roc_auc_score(labels, scores)
+        # a = roc_curve(labels.reshape(-1), scores)
+        # plt.plot(*a[:2])
+        # plt.show()
+        self.test_auc = roc_auc_score(labels.reshape(-1), scores)
         logger.info('Test set auc: {:.2f}%'.format(100. * self.test_auc))
+        # self.test_f1 = f1_score(labels.reshape(-1), scores)
+        # logger.info('Test set f1: {:.2f}%'.format(100. * self.test_f1))
+        # self.test_prec = precision_score(labels.reshape(-1), scores)
+        # self.test_rec = recall_score(labels.reshape(-1), scores)
+        # logger.info(f'Test set precision: {100. * self.test_prec:.2f}, '
+        #             f'recall {100 * self.test_rec:.2f}')
 
-        logger.info('Finished testing.')
+        logger.debug('Finished testing.')
 
     def init_center_c(self, train_loader: DataLoader, net: BaseNet, eps=0.1):
         """Initialize hypersphere center c as the mean from an initial forward pass on the data."""

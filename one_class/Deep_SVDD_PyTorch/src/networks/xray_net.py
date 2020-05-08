@@ -94,3 +94,8 @@ class XRAY_Net_Autoencoder(BaseNet):
 
         assert inp_shape == x.shape
         return x
+
+    def get_loss(self,inputs, outputs):
+        scores = torch.sum((outputs - inputs) ** 2, dim=tuple(range(1, outputs.dim())))
+        loss = torch.mean(scores)
+        return loss

@@ -9,7 +9,7 @@ import numpy as np
 import os
 import torch
 import torchvision.transforms as transforms
-
+import logging
 
 class Synthetic_Dataset(TorchtabularDataset):
 
@@ -34,42 +34,68 @@ class Synthetic_Dataset(TorchtabularDataset):
         #            (-0.8280402650205075, 10.581538445782988),
         #            (-0.7369959242164307, 10.697039838804978)]
 
-        min_max = [(0, 10) * 10]
+        # min_max = [(0, 10) * 10]
         # MNIST preprocessing: GCN (with L1 norm) and min-max feature scaling to [0,1]
-        transform = transforms.Compose([transforms.ToTensor(),
-                                        transforms.Lambda(lambda x: global_contrast_normalization(x, scale='l1')),
-                                        transforms.Normalize([min_max[normal_class][0]],
-                                                             [min_max[normal_class][1] - min_max[normal_class][0]])])
+        # transform = transforms.Compose([transforms.ToTensor(),
+        #                                 transforms.Lambda(lambda x: global_contrast_normalization(x, scale='l1')),
+        #                                 transforms.Normalize([min_max[normal_class][0]],
+        #                                                      [min_max[normal_class][1] - min_max[normal_class][0]])])
+        #
+        # target_transform = transforms.Lambda(lambda x: int(x in self.outlier_classes))
 
-        target_transform = transforms.Lambda(lambda x: int(x in self.outlier_classes))
-
-        train_set = MySynthetic(root=os.path.join(self.root,"train.pkl"))
+        train_set = MySynthetic(root=self.root, train=True)
         # Subset train_set to normal class
         # train_idx_normal = get_target_label_idx(train_set.train_labels.clone().data.cpu().numpy(), self.normal_classes)
         self.train_set = train_set
 
-        self.test_set = MySynthetic(root=os.path.join(self.root,"test.pkl"))
+        self.test_set = MySynthetic(root=self.root, train=False)
 
 
 class MySynthetic(data.Dataset):
     """Torchvision MNIST class with patch of __getitem__ method to also return the index of a data sample."""
 
-    def __init__(self, root: str):
+    def __init__(self, root: str, train=True):
         """
         :param root: folder with data to load
         """
-        # changed way of init super cause of my is not vision
         super().__init__()
         self.root = root
-
+        logger = logging.getLogger()
         # TODO: dataset == np array with features & targets
         #  self data = features, self.targets = targets, load with smth
-        with open(self.root, "rb") as f:
-            full_data = pickle.load(f)
-        # if train - all [:,2] going to be 2, but it is zero, known class
-        # if test - all [:,2] going to give true answer
-        self.data, self.targets = full_data[:,0].reshape((-1,1)),\
-                                  (full_data[:,2] if 2 not in full_data[:,2] else np.zeros(len(full_data))).reshape((-1,1))
+        if train:
+            with open(os.path.join(self.root,"train.pkl"), "rb") as f:
+                full_data = pickle.load(f)
+
+            logger.info(f"train size {len(full_data[full_data[:,-1]==2])}")
+            full_data = full_data[full_data[:,-1]==2]
+
+            for i in range(full_data.shape[1] - 2):
+                full_data[:, i] = (full_data[:, i] - full_data[:, i].min()) / (
+                            full_data[:, i].max() - full_data[:, i].min())
+
+            # if train - all [:,2] going to be 2, but it is zero, known class
+            # if test - all [:,2] going to give true answer
+            self.data, self.targets = full_data[:,:-2],\
+                                       np.zeros(len(full_data)).reshape((-1,1)) #.reshape((full_data.shape[0], full_data.shape[1]-2, 1))
+        else:
+            with open(os.path.join(self.root,"test.pkl"), "rb") as f:
+                full_data = pickle.load(f)
+            # if train - all [:,2] going to be 2, but it is zero, known class
+            # if test - all [:,2] going to give true answer
+            full_data[:, -1] = np.where(full_data[:, -1] == 2, 0, full_data[:, -1])
+
+            logger.info(f"test size {len(full_data)}, "
+                        f"test pos size {len(full_data[full_data[:, -2] == 0])}, "
+                        f"test neg size {len(full_data[full_data[:, -2] == 1])}")
+            for i in range(full_data.shape[1]-2):
+                full_data[:,i] = (full_data[:,i] - full_data[:,i].min())/(full_data[:,i].max() - full_data[:,i].min())
+
+
+
+            self.data, self.targets = full_data[:,:-2],\
+                                       full_data[:,-1].reshape((-1,1)) #.reshape((full_data.shape[0], full_data.shape[1]-2, 1)),\
+
         self.data = torch.from_numpy(self.data).float()
         self.targets = torch.from_numpy(self.targets).float()
 
