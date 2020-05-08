@@ -18,3 +18,5 @@
 !one_class/Deep_SVDD_PyTorch/src
 !one_class/Deep_SVDD_PyTorch/src/*
 !one_class/Deep_SVDD_PyTorch/README.md
+
+**/__pycache__
