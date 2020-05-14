@@ -1,10 +1,11 @@
 import json
 import torch
 
-from base.base_dataset import BaseADDataset
-from networks.main import build_network, build_autoencoder
-from optim.deepSVDD_trainer import DeepSVDDTrainer
-from optim.ae_trainer import AETrainer
+from .base.base_dataset import BaseADDataset
+from .networks.main import build_network, build_autoencoder
+from .optim.deepSVDD_trainer import DeepSVDDTrainer
+from .optim.ae_trainer import AETrainer
+from .datasets.synthetic import Synthetic_Dataset
 
 
 class DeepSVDD(object):
@@ -72,6 +73,22 @@ class DeepSVDD(object):
         self.results['train_time'] = self.trainer.train_time
         return statistics
 
+    def test_on_train(self, dataset: BaseADDataset, device: str = 'cuda', n_jobs_dataloader: int = 0):
+        """Tests the Deep SVDD model on the test data."""
+
+        dataset.train_set, dataset.train_test_set = dataset.train_test_set, dataset.train_set
+
+        if self.trainer is None:
+            self.trainer = DeepSVDDTrainer(self.objective, self.R, self.c, self.nu,
+                                           device=device, n_jobs_dataloader=n_jobs_dataloader)
+
+        scores, labels = self.trainer.test_on_train(dataset, self.net)
+        # Get results
+        self.results['test_auc'] = self.trainer.test_auc
+        self.results['test_time'] = self.trainer.test_time
+        self.results['test_scores'] = self.trainer.test_scores
+        return scores, labels
+
     def test(self, dataset: BaseADDataset, device: str = 'cuda', n_jobs_dataloader: int = 0):
         """Tests the Deep SVDD model on the test data."""
 
@@ -79,18 +96,19 @@ class DeepSVDD(object):
             self.trainer = DeepSVDDTrainer(self.objective, self.R, self.c, self.nu,
                                            device=device, n_jobs_dataloader=n_jobs_dataloader)
 
-        self.trainer.test(dataset, self.net)
+        scores, labels = self.trainer.test(dataset, self.net)
         # Get results
         self.results['test_auc'] = self.trainer.test_auc
         self.results['test_time'] = self.trainer.test_time
         self.results['test_scores'] = self.trainer.test_scores
+        return scores, labels
 
     def pretrain(self, dataset: BaseADDataset, optimizer_name: str = 'adam', lr: float = 0.001, n_epochs: int = 100,
                  lr_milestones: tuple = (), batch_size: int = 128, weight_decay: float = 1e-6, device: str = 'cuda',
                  n_jobs_dataloader: int = 0):
         """Pretrains the weights for the Deep SVDD network \phi via autoencoder."""
 
-        self.ae_net = build_autoencoder(self.net_name, dataset.train_set.data.shape[1])
+        self.ae_net = build_autoencoder(self.net_name)#, dataset.train_set.data.shape[1])
         self.ae_optimizer_name = optimizer_name
         self.ae_trainer = AETrainer(optimizer_name, lr=lr, n_epochs=n_epochs, lr_milestones=lr_milestones,
                                     batch_size=batch_size, weight_decay=weight_decay, device=device,

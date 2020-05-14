@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from base.base_net import BaseNet
+from ..base.base_net import BaseNet
 
 
 class Synth_Net(BaseNet):
@@ -36,7 +36,7 @@ class Synth_Net_Autoencoder(BaseNet):
         # Decoder
         self.dec1 = nn.Linear(self.rep_dim, input_dim)
         self.dec2 = nn.Linear(input_dim, input_dim)
-        self.init_weight()
+        # self.init_weight()
 
     def init_weight(self):
         torch.nn.init.xavier_uniform(self.fc1.weight)

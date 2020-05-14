@@ -1,11 +1,11 @@
 from torch.utils.data import Subset
 from PIL import Image
 from torchvision.datasets import MNIST
-from base.torchvision_dataset import TorchvisionDataset
+from ..base.torchvision_dataset import TorchvisionDataset
 from .preprocessing import get_target_label_idx, global_contrast_normalization
 
 import torchvision.transforms as transforms
-
+import collections
 
 class MNIST_Dataset(TorchvisionDataset):
 
@@ -13,9 +13,11 @@ class MNIST_Dataset(TorchvisionDataset):
         super().__init__(root)
 
         self.n_classes = 2  # 0: normal, 1: outlier
-        self.normal_classes = tuple([normal_class])
+        self.normal_classes = tuple([normal_class]) \
+        if not isinstance(normal_class, collections.iterable) else normal_class
         self.outlier_classes = list(range(0, 10))
-        self.outlier_classes.remove(normal_class)
+        for i in self.normal_classes:
+            self.outlier_classes.remove(i)
 
         # Pre-computed min and max values (after applying GCN) from train data per class
         min_max = [(-0.8826567065619495, 9.001545489292527),
@@ -45,6 +47,8 @@ class MNIST_Dataset(TorchvisionDataset):
 
         self.test_set = MyMNIST(root=self.root, train=False, download=True,
                                 transform=transform, target_transform=target_transform)
+        self.train_test_set = MyMNIST(root=self.root, train=True, download=True,
+                            transform=transform, target_transform=target_transform)
 
 
 class MyMNIST(MNIST):

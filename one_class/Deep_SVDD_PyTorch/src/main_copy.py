@@ -1,3 +1,7 @@
+import sys
+sys.path += r"L:\Documents\PyCharmProjects\pu_vs_oc\one_class\Deep_SVDD_PyTorch\src"
+
+
 import click
 import torch
 import logging

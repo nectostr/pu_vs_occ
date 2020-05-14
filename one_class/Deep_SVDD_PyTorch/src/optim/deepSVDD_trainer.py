@@ -1,6 +1,6 @@
-from base.base_trainer import BaseTrainer
-from base.base_dataset import BaseADDataset
-from base.base_net import BaseNet
+from ..base.base_trainer import BaseTrainer
+from ..base.base_dataset import BaseADDataset
+from ..base.base_net import BaseNet
 from torch.utils.data.dataloader import DataLoader
 from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score, roc_curve
 
@@ -126,6 +126,63 @@ class DeepSVDDTrainer(BaseTrainer):
 
         return net, statistics
 
+    def test_on_train(self, dataset: BaseADDataset, net: BaseNet):
+        logger = logging.getLogger()
+
+        # Set device for network
+        net = net.to(self.device)
+
+        # Get test data loader (second - test, first - train, here - test on train)
+        test_loader, _ = dataset.loaders(batch_size=self.batch_size, num_workers=self.n_jobs_dataloader)
+
+        # Testing
+        logger.debug('Starting testing...')
+        start_time = time.time()
+        idx_label_score = []
+        net.eval()
+        with torch.no_grad():
+            for data in test_loader:
+                inputs, labels, idx = data
+                inputs = inputs.to(self.device)
+                outputs = net(inputs)
+                dist = torch.sum((outputs - self.c) ** 2, dim=1)
+                if self.objective == 'soft-boundary':
+                    scores = dist - self.R ** 2
+                else:
+                    scores = dist
+
+                # Save triples of (idx, label, score) in a list
+                idx_label_score += list(zip(idx.cpu().data.numpy().tolist(),
+                                            labels.cpu().data.numpy().tolist(),
+                                            scores.cpu().data.numpy().tolist()))
+
+        self.test_time = time.time() - start_time
+        logger.debug('Testing time: %.3f' % self.test_time)
+
+        self.test_scores = idx_label_score
+
+        # Compute
+        _, labels, scores = zip(*idx_label_score)
+        labels = np.array(labels)
+        scores = np.array(scores)
+
+        # a = roc_curve(labels.reshape(-1), scores)
+        # plt.plot(*a[:2])
+        # plt.show()
+        # self.test_auc = roc_auc_score(labels.reshape(-1), scores)
+        # logger.info('Test set auc: {:.2f}%'.format(100. * self.test_auc))
+        # self.test_f1 = f1_score(labels.reshape(-1), scores)
+        # logger.info('Test set f1: {:.2f}%'.format(100. * self.test_f1))
+        # self.test_prec = precision_score(labels.reshape(-1), scores)
+        # self.test_rec = recall_score(labels.reshape(-1), scores)
+        # logger.info(f'Test set precision: {100. * self.test_prec:.2f}, '
+        #             f'recall {100 * self.test_rec:.2f}')
+
+        logger.debug('Finished testing.')
+        return scores, labels
+
+
+
     def test(self, dataset: BaseADDataset, net: BaseNet):
         logger = logging.getLogger()
 
@@ -179,6 +236,7 @@ class DeepSVDDTrainer(BaseTrainer):
         #             f'recall {100 * self.test_rec:.2f}')
 
         logger.debug('Finished testing.')
+        return scores, labels
 
     def init_center_c(self, train_loader: DataLoader, net: BaseNet, eps=0.1):
         """Initialize hypersphere center c as the mean from an initial forward pass on the data."""

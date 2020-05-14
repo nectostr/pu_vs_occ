@@ -46,7 +46,7 @@ predicted_alpha, poster, net = estimate_poster_cv(x_train, y_train, estimator='d
                                         estimate_poster_options={'disp': False},
                                         estimate_diff_options={},
                                         estimate_preds_cv_options={
-                                            'cv': 3,
+                                            'cv': 2,
                                             'n_networks': 1,
                                             'lr': 0.005,
                                             'hid_dim': 4,
@@ -92,7 +92,8 @@ outs = net(x_test) * predicted_alpha
 # print(outs)
 outs = outs.detach().numpy()
 y_test_true = y_test_true % 2
-print("Pre", precision_score(outs.round(), (y_test_true/2+0.1).round()))
-print("Rec", recall_score(outs.round(), (y_test_true/2+0.1).round()))
-print("Auc", roc_auc_score((y_test_true/2+0.1).round(), outs))
-print("f1", f1_score(outs.round(), (y_test_true/2+0.1).round()))
+
+print("Pre", precision_score(outs.round(), y_test_true))
+print("Rec", recall_score(outs.round(), y_test_true))
+print("Auc", roc_auc_score(y_test_true, outs))
+print("f1", f1_score(outs.round(), y_test_true))

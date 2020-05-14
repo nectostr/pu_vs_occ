@@ -21,8 +21,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-import DEDPUL.synth_pu_work as pu
-import one_class.Deep_SVDD_PyTorch.src.synth_occ_work as occ
+import DEDPUL.mnist_pu_work as pu
+import one_class.Deep_SVDD_PyTorch.src.mnist_occ_work as occ
 
 
 def comare():
@@ -117,4 +117,7 @@ def comare():
         pickle.dump(d, f)
 
 if __name__ == '__main__':
-    comare()
+    root = r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\synthetic"
+
+    train, test = occ.get_train_test_results(root)
+    print(train[2], test[2])

@@ -2,7 +2,9 @@
 !.gitignore
 !comparative_synth.py
 !text_networks.py
-
+!comparative_synth.py
+!comparative_mnist.py
+!multy-compare.py
 !DEDPUL
 !DEDPUL/algorithms.py
 !DEDPUL/KMPE.py
@@ -11,6 +13,8 @@
 !DEDPUL/utils.py
 !DEDPUL/synth_test.py
 !DEDPUL/xray_test.py
+!DEDPUL/synth_pu_work.py
+!DEDPUL/mnist_pu_work.py
 
 !one_class
 !one_class/README.md

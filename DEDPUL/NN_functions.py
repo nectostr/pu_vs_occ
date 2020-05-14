@@ -73,7 +73,7 @@ class ConvNet(nn.Module):
         self.conv5 = nn.Conv2d(32, 32, 1)
         self.conv6 = nn.Conv2d(32, 4, 1)
 
-        self.conv_to_fc = 4*56*56
+        self.conv_to_fc = 4*7*7#4*56*56
         self.fc1 = nn.Linear(self.conv_to_fc, hid_dim_full)
         if self.bayes:
             self.out_mean = nn.Linear(hid_dim_full, out_dim)

@@ -1,7 +1,7 @@
 from torch.utils.data import Subset
 from PIL import Image
 from torchvision.datasets import MNIST
-from base.torchtabular_dataset import TorchtabularDataset
+from ..base.torchtabular_dataset import TorchtabularDataset
 from .preprocessing import get_target_label_idx, global_contrast_normalization
 import torch.utils.data as data
 import pickle
@@ -49,6 +49,7 @@ class Synthetic_Dataset(TorchtabularDataset):
         self.train_set = train_set
 
         self.test_set = MySynthetic(root=self.root, train=False)
+        self.train_test_set = MySynthetic(root=self.root, train="train_test")
 
 
 class MySynthetic(data.Dataset):
@@ -63,7 +64,7 @@ class MySynthetic(data.Dataset):
         logger = logging.getLogger()
         # TODO: dataset == np array with features & targets
         #  self data = features, self.targets = targets, load with smth
-        if train:
+        if train == True:
             with open(os.path.join(self.root,"train.pkl"), "rb") as f:
                 full_data = pickle.load(f)
 
@@ -78,7 +79,7 @@ class MySynthetic(data.Dataset):
             # if test - all [:,2] going to give true answer
             self.data, self.targets = full_data[:,:-2],\
                                        np.zeros(len(full_data)).reshape((-1,1)) #.reshape((full_data.shape[0], full_data.shape[1]-2, 1))
-        else:
+        elif train == False:
             with open(os.path.join(self.root,"test.pkl"), "rb") as f:
                 full_data = pickle.load(f)
             # if train - all [:,2] going to be 2, but it is zero, known class
@@ -95,6 +96,21 @@ class MySynthetic(data.Dataset):
 
             self.data, self.targets = full_data[:,:-2],\
                                        full_data[:,-1].reshape((-1,1)) #.reshape((full_data.shape[0], full_data.shape[1]-2, 1)),\
+        elif train == "train_test":
+            with open(os.path.join(self.root,"train.pkl"), "rb") as f:
+                full_data = pickle.load(f)
+
+            logger.info(f"train size {len(full_data[full_data[:,-1]==2])}")
+            full_data[:, -1] = np.where(full_data[:, -1] == 2, 0, full_data[:, -1])
+
+            for i in range(full_data.shape[1] - 2):
+                full_data[:, i] = (full_data[:, i] - full_data[:, i].min()) / (
+                            full_data[:, i].max() - full_data[:, i].min())
+
+            # if train - all [:,2] going to be 2, but it is zero, known class
+            # if test - all [:,2] going to give true answer
+            self.data, self.targets = full_data[:,:-2],\
+                                       full_data[:,-1].reshape((-1,1)) #.reshape((full_data.shape[0], full_data.shape[1]-2, 1))
 
         self.data = torch.from_numpy(self.data).float()
         self.targets = torch.from_numpy(self.targets).float()
