@@ -15,10 +15,10 @@ from .deepSVDD import DeepSVDD
 def get_train_test_results(root):
 
 
-    dataset_name = "synth"
+    dataset_name = "tabular"
     data_path = root
     normal_class = 0
-    dataset = load_dataset(dataset_name, data_path, normal_class)
+    dataset = load_dataset(dataset_name, data_path, normal_class, no_test=True)
 
     nu = 0.1
     deep_SVDD = DeepSVDD("one-class", nu)
@@ -29,7 +29,7 @@ def get_train_test_results(root):
     deep_SVDD.pretrain(dataset,
                                optimizer_name="adam",
                                lr=0.0002,
-                               n_epochs=10,
+                               n_epochs=30,
                                lr_milestones=(),
                                batch_size=128,
                                weight_decay=0.00001,
@@ -37,7 +37,7 @@ def get_train_test_results(root):
     deep_SVDD.train(dataset,
                         optimizer_name="adam",
                         lr=0.0001,
-                        n_epochs=5,
+                        n_epochs=15,
                         lr_milestones=(),
                         batch_size=128,
                         weight_decay=0.001,
@@ -58,31 +58,10 @@ def get_train_test_results(root):
 
     scores_train_occ, labels_train_occ = scores.copy(), labels.copy()
 
-    #TODO test result
-    scores, labels = deep_SVDD.test(dataset, device="cuda")
 
-    fpr, tpr, threshold = roc_curve(labels, scores)
-    optimal_idx = np.argmax(tpr - fpr)
-    optimal_threshold = threshold[optimal_idx]
-    scores_bin = np.where(scores > optimal_threshold, 1, 0)
-    occ_precision_test = precision_score(labels, scores_bin)
-    occ_recall_test = recall_score(labels, scores_bin)
-    occ_auc_test = roc_auc_score(labels, scores)
-    occ_f1_test = f1_score(labels, scores_bin)
 
-    scores_test_occ, labels_test_occ = scores.copy(), labels.copy()
-
-    plt.plot(fpr, tpr,)
-    plt.show()
-
-    return [(scores_train_occ, labels_train_occ,
-            (occ_precision_train, occ_recall_train, occ_auc_train, occ_f1_train)),
-            (scores_test_occ, labels_test_occ,
-            (occ_precision_test, occ_recall_test, occ_auc_test, occ_f1_test))]
+    return scores_train_occ, labels_train_occ, (occ_precision_train, occ_recall_train, occ_auc_train, occ_f1_train)
 
 if __name__ == '__main__':
-    train, test = get_train_test_results(r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\synthetic")
+    train, test = get_train_test_results(r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\sonar")
     print(train[2], test[2])
-
-
-# vord2vec - для русского

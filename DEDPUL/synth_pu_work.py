@@ -47,7 +47,7 @@ def get_train_test_results(root):
                                             estimate_preds_cv_options={
                                                 'cv': 3,
                                                 'n_networks': 1,
-                                                'lr': 0.005,
+                                                'lr': 0.01,
                                                 'hid_dim': 4,
                                                 'n_hid_layers': 2
                                             },
@@ -122,8 +122,9 @@ def get_train_test_results(root):
     
     #Get test result
     x_test = torch.as_tensor(x_test, dtype=torch.float32)
-    outs = net(x_test) * predicted_alpha
-    
+
+    outs = net(x_test) #* predicted_alpha
+
     outs = outs.detach().numpy()
     y_test_true = y_test_true % 2
     

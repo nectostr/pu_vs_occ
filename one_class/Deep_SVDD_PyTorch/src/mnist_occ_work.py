@@ -1,3 +1,4 @@
+# DO NOT RUN ME - RUN ME FROM OUTSIDE
 import sys
 sys.path += r"L:\Documents\PyCharmProjects\pu_vs_oc\one_class\Deep_SVDD_PyTorch\src"
 
@@ -18,6 +19,7 @@ def get_train_test_results(root):
     dataset_name = "mnist"
     data_path = root
     normal_class = 0
+
     dataset = load_dataset(dataset_name, data_path, normal_class)
 
     nu = 0.1
@@ -80,6 +82,8 @@ def get_train_test_results(root):
             (scores_test_occ, labels_test_occ,
             (occ_precision_test, occ_recall_test, occ_auc_test, occ_f1_test))]
 
+
+# DO NOT RUN ME - RUN ME FROM OUTSIDE
 if __name__ == '__main__':
-    train, test = get_train_test_results(r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\MyMNIST")
+    train, test = get_train_test_results(r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\MyMNIST\current")
     print(train[2], test[2])

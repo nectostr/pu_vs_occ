@@ -85,6 +85,8 @@ def _setup_datasets(data_to_parse, ngrams=1, vocab=None, include_unk=False):
 
     return TextClassificationDataset(vocab, train_data, train_labels)
 
+
+
 class TextSentiment(nn.Module):
     """
     Network block
@@ -106,6 +108,11 @@ class TextSentiment(nn.Module):
 #         self.fc2.bias.data.zero_()
         self.fc3.weight.data.uniform_(-initrange, initrange)
         self.fc3.bias.data.zero_()
+
+    def vord_to_vec_test(self, text, offsets):
+        embedded = self.embedding(text, offsets)
+        x = self.fc1(embedded)
+        return x
 
     def forward(self, text, offsets):
         embedded = self.embedding(text, offsets)
@@ -138,7 +145,7 @@ def generate_batch(batch):
 
 
 
-def get_text_result(df, epohs=10, lr=0.1, hid_dim=32):
+def get_text_result(df, epohs=10, lr=0.1, hid_dim=32, get_non_t_class=False):
     """
     Prepares text, buld and train network and return results for PU in "preds" term.
     :param df: values of dataframe (numpy array)
@@ -233,8 +240,10 @@ def get_text_result(df, epohs=10, lr=0.1, hid_dim=32):
         # print('Epoch: %d' % (epoch + 1), " | time in %d minutes, %d seconds" % (mins, secs))
         # print(f'\tLoss: {train_loss:.4f}(train)\t|\tAcc: {train_acc * 100:.1f}%(train)')
         # print(f'\tLoss: {valid_loss:.4f}(valid)\t|\tAcc: {valid_acc * 100:.1f}%(valid)')
-
-    return predict(train_dataset)
+    if get_non_t_class:
+        return predict(train_dataset), model
+    else:
+        return predict(train_dataset)
 
 
 if __name__ == '__main__':

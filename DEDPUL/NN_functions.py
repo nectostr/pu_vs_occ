@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from random import sample
 import tqdm
-
+from torch import nn
 from keras.layers import Dense
 from keras.models import Sequential
 from keras.optimizers import Adam
@@ -61,6 +61,7 @@ class UsualNet(nn.Module):
         else:
             return p
 
+
 class ConvNet(nn.Module):
     def __init__(self, inp_dim=(32, 32, 3), out_dim=1, hid_dim_full=128, bayes=False):
         super(ConvNet, self).__init__()
@@ -73,7 +74,7 @@ class ConvNet(nn.Module):
         self.conv5 = nn.Conv2d(32, 32, 1)
         self.conv6 = nn.Conv2d(32, 4, 1)
 
-        self.conv_to_fc = 4*7*7#4*56*56
+        self.conv_to_fc = 4*56*56 #4*7*7#
         self.fc1 = nn.Linear(self.conv_to_fc, hid_dim_full)
         if self.bayes:
             self.out_mean = nn.Linear(hid_dim_full, out_dim)
@@ -111,6 +112,33 @@ class ConvNet(nn.Module):
         else:
             return p
 
+class MNIST_LeNet(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+        self.rep_dim = 32
+        self.pool = nn.MaxPool2d(2, 2)
+
+        self.conv1 = nn.Conv2d(1, 8, 5, bias=False, padding=2)
+        self.bn1 = nn.BatchNorm2d(8, eps=1e-04, affine=False)
+        self.conv2 = nn.Conv2d(8, 4, 5, bias=False, padding=2)
+        self.bn2 = nn.BatchNorm2d(4, eps=1e-04, affine=False)
+        self.fc1 = nn.Linear(4 * 7 * 7, self.rep_dim, bias=False)
+        self.fc2 = nn.Linear(self.rep_dim, self.rep_dim//2, bias=False)
+        self.fc3 = nn.Linear(self.rep_dim//2, 1, bias=False)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.pool(F.leaky_relu(self.bn1(x)))
+        x = self.conv2(x)
+        x = self.pool(F.leaky_relu(self.bn2(x)))
+        x = x.view(x.size(0), -1)
+        x = F.leaky_relu(self.fc1(x))
+        x = F.leaky_relu(self.fc2(x))
+        x = F.sigmoid(self.fc3(x))
+        return x
+
 def get_discriminator(inp_dim, out_dim=1, hid_dim=32, n_hid_layers=1, bayes=False, net_name=None):
     """
     Feed-forward Neural Network constructor
@@ -125,9 +153,14 @@ def get_discriminator(inp_dim, out_dim=1, hid_dim=32, n_hid_layers=1, bayes=Fals
         return UsualNet(inp_dim, out_dim, hid_dim, n_hid_layers, bayes)
     elif net_name == 'xray_net':
         return XRAY_Net()
+    elif net_name == "mnist_lenet":
+        return MNIST_LeNet()
 
 
 def all_convolution(inp_dim=(32, 32, 3), out_dim=1, hid_dim_full=128, bayes=False):
+   return ConvNet(inp_dim, out_dim, hid_dim_full, bayes=bayes)
+
+def mnist_lenet(inp_dim=(32, 32, 3), out_dim=1, hid_dim_full=128, bayes=False):
    return ConvNet(inp_dim, out_dim, hid_dim_full, bayes=bayes)
 
 
@@ -176,6 +209,8 @@ def d_loss_nnRE(batch_mix, batch_pos, discriminator, alpha, beta=0., gamma=1., l
         return pos_part + nn_part, 1
     else:
         return -nn_part, gamma
+
+
 
 #@logger_start
 def train_NN(mix_data, pos_data, discriminator, d_optimizer, mix_data_test=None, pos_data_test=None,

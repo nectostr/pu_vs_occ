@@ -6,7 +6,7 @@ from .networks.main import build_network, build_autoencoder
 from .optim.deepSVDD_trainer import DeepSVDDTrainer
 from .optim.ae_trainer import AETrainer
 from .datasets.synthetic import Synthetic_Dataset
-
+from .datasets.tabular import Tabular_Dataset
 
 class DeepSVDD(object):
     """A class for the Deep SVDD method.
@@ -107,8 +107,10 @@ class DeepSVDD(object):
                  lr_milestones: tuple = (), batch_size: int = 128, weight_decay: float = 1e-6, device: str = 'cuda',
                  n_jobs_dataloader: int = 0):
         """Pretrains the weights for the Deep SVDD network \phi via autoencoder."""
-
-        self.ae_net = build_autoencoder(self.net_name)#, dataset.train_set.data.shape[1])
+        if isinstance(dataset, Synthetic_Dataset) or isinstance(dataset, Tabular_Dataset):
+            self.ae_net = build_autoencoder(self.net_name, dataset.train_set.data.shape[1])
+        else:
+            self.ae_net = build_autoencoder(self.net_name)
         self.ae_optimizer_name = optimizer_name
         self.ae_trainer = AETrainer(optimizer_name, lr=lr, n_epochs=n_epochs, lr_milestones=lr_milestones,
                                     batch_size=batch_size, weight_decay=weight_decay, device=device,

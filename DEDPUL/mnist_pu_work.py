@@ -20,34 +20,9 @@ from DEDPUL.NN_functions import *
 
 def get_train_test_results(root):
 
-    processed_folder = r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\MyMNIST\processed"
+    processed_folder = r"L:\Documents\PyCharmProjects\pu_vs_oc\DATA\MyMNIST\current"
     data_file = "training.pt"
-    data, targets = torch.load(os.path.join(processed_folder, data_file))
-
-    normal_classes = [0,]
-    outlier_classes = list(range(0, 10))
-    for i in normal_classes:
-        outlier_classes.remove(i)
-
-    data = data.numpy()
-    targets = targets.numpy()
-
-    mask = np.isin(targets, normal_classes)
-    targets_true = 1 - mask
-
-
-    neg_mix_size = len(targets_true[targets_true == 1])
-    pos_mix_size = len(targets_true[targets_true == 0]) // 2
-    alpha = neg_mix_size / (neg_mix_size + pos_mix_size)
-    pos_size = len(targets_true[targets_true == 0]) - pos_mix_size
-
-    targets_to_train = targets_true.copy()
-    n = 0
-    while n < pos_mix_size:
-        ind = np.random.randint(0,len(targets_true))
-        if targets_to_train[ind] == 0:
-            targets_to_train[ind] = 1
-            n += 1
+    data, targets_to_train, targets_true = torch.load(os.path.join(processed_folder, data_file))
 
 
     # Print statistics
@@ -66,20 +41,16 @@ def get_train_test_results(root):
     
     # print([(data[:,i].min(),data[:,i].max()) for i in range(data.shape[1])])
 
-    n = np.random.choice(np.arange(0,len(targets_true)),len(targets_true), replace=False)
 
-    data = data[n]
-    targets_true = targets_true[n]
-    targets_to_train = targets_to_train[n]
     
     predicted_alpha, poster, net = estimate_poster_cv(data, targets_to_train, estimator='dedpul', alpha=None,
                                             estimate_poster_options={'disp': False},
                                             estimate_diff_options={},
                                             estimate_preds_cv_options={
-                                                'all_conv': True,
+                                                'all_conv': 'mnist_lenet',
                                                 'cv': 3,
                                                 'n_networks': 1,
-                                                'lr': 0.005,
+                                                'lr': 0.01,
                                                 'hid_dim': 4,
                                                 'n_hid_layers': 2
                                             },
@@ -90,6 +61,7 @@ def get_train_test_results(root):
     
     # # # Comparing alphas. See further in DEDPUL options.
     # print('predicted alpha:', predicted_alpha, '\nerror:', abs(predicted_alpha - alpha))
+    targets_true = targets_true.numpy()
     targets_true2 = targets_true.copy()
 
     j = 0

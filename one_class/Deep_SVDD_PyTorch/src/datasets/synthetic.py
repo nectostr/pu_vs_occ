@@ -13,7 +13,7 @@ import logging
 
 class Synthetic_Dataset(TorchtabularDataset):
 
-    def __init__(self, root: str, normal_class=0):
+    def __init__(self, root: str, normal_class=0, no_test=False):
         super().__init__(root)
 
         self.n_classes = 2  # 0: normal, 1: outlier
@@ -47,8 +47,8 @@ class Synthetic_Dataset(TorchtabularDataset):
         # Subset train_set to normal class
         # train_idx_normal = get_target_label_idx(train_set.train_labels.clone().data.cpu().numpy(), self.normal_classes)
         self.train_set = train_set
-
-        self.test_set = MySynthetic(root=self.root, train=False)
+        if not no_test:
+            self.test_set = MySynthetic(root=self.root, train=False)
         self.train_test_set = MySynthetic(root=self.root, train="train_test")
 
 

@@ -64,6 +64,7 @@ def comare():
         occ_recall_test_s.append(occ_recall_test)
         occ_auc_test_s.append(occ_auc_test)
         occ_f1_test_s.append(occ_f1_test)
+
         cor = pearsonr(scores_test_pu.reshape(-1), scores_test_occ)[0]
         corrs.append(cor)
         print(cor)

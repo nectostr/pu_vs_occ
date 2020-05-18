@@ -1,7 +1,9 @@
 from torch.utils.data import Subset
 from PIL import Image
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST, VisionDataset
 from ..base.torchvision_dataset import TorchvisionDataset
+import torch
+import os
 from .preprocessing import get_target_label_idx, global_contrast_normalization
 
 import torchvision.transforms as transforms
@@ -10,11 +12,13 @@ import collections
 class MNIST_Dataset(TorchvisionDataset):
 
     def __init__(self, root: str, normal_class=0):
+        self.root = root
         super().__init__(root)
+
 
         self.n_classes = 2  # 0: normal, 1: outlier
         self.normal_classes = tuple([normal_class]) \
-        if not isinstance(normal_class, collections.iterable) else normal_class
+        if not hasattr(normal_class, "__iter__") else normal_class
         self.outlier_classes = list(range(0, 10))
         for i in self.normal_classes:
             self.outlier_classes.remove(i)
@@ -39,23 +43,42 @@ class MNIST_Dataset(TorchvisionDataset):
 
         target_transform = transforms.Lambda(lambda x: int(x in self.outlier_classes))
 
-        train_set = MyMNIST(root=self.root, train=True, download=True,
+        self.train_set = MyMNIST(root=self.root, train=True,
                             transform=transform, target_transform=target_transform)
-        # Subset train_set to normal class
-        train_idx_normal = get_target_label_idx(train_set.train_labels.clone().data.cpu().numpy(), self.normal_classes)
-        self.train_set = Subset(train_set, train_idx_normal)
-
-        self.test_set = MyMNIST(root=self.root, train=False, download=True,
+        self.test_set = MyMNIST(root=self.root, train=False,
                                 transform=transform, target_transform=target_transform)
-        self.train_test_set = MyMNIST(root=self.root, train=True, download=True,
+        self.train_test_set = MyMNIST(root=self.root, train="train_test",
                             transform=transform, target_transform=target_transform)
 
 
-class MyMNIST(MNIST):
+class MyMNIST(VisionDataset):
     """Torchvision MNIST class with patch of __getitem__ method to also return the index of a data sample."""
 
-    def __init__(self, *args, **kwargs):
-        super(MyMNIST, self).__init__(*args, **kwargs)
+    def __init__(self, root, train,
+                            transform, target_transform, **kwargs):
+        super(MyMNIST, self).__init__(root,
+                            transform=transform, target_transform=target_transform)
+        self.train = train
+        if train:
+            data_file = "training.pt"
+            self.data, self.targets, self.targets_true = torch.load(os.path.join(self.root, data_file))
+            if train == True:
+                self.data = self.data[self.targets == 0]
+                self.targets = self.targets_true[self.targets == 0]
+            else:
+                self.targets = self.targets_true
+            self.train_data = self.data
+            self.train_labels = self.targets
+        else:
+            data_file = "test.pt"
+            self.data, self.targets = torch.load(os.path.join(self.root, data_file))
+
+            self.test_data = self.data
+            self.test_labels = self.targets
+
+
+
+
 
     def __getitem__(self, index):
         """Override the original method of the MNIST class.
@@ -80,3 +103,6 @@ class MyMNIST(MNIST):
             target = self.target_transform(target)
 
         return img, target, index  # only line changed
+
+    def __len__(self):
+        return len(self.data)

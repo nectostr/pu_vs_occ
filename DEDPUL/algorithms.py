@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
 
 import torch.optim as optim
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from pandas import Series, DataFrame
 import torch
 from scipy.stats import norm, laplace
@@ -62,7 +62,11 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
     if not text:
         for i in range(n_networks):
             kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state)
+
             for train_index, test_index in kf.split(df, target):
+            # indexes = np.random.choice(np.arange(0,len(df)), int(len(df)*0.7), replace=False)
+            # indexes = ((indexes, np.array(list(set(np.arange(0,len(df))) - set(indexes)))),)
+            # for train_index, test_index in indexes:
                 train_data = df[train_index]
                 train_target = target[train_index]
                 mix_data = train_data[train_target == 1]
@@ -76,8 +80,12 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
                 if not all_conv:
                     discriminator = get_discriminator(inp_dim=df.shape[1], out_dim=1, hid_dim=hid_dim,
                                                       n_hid_layers=n_hid_layers, bayes=bayes)
-                else:
+                elif all_conv == True:
                     discriminator = all_convolution(hid_dim_full=hid_dim, bayes=bayes)
+                elif all_conv == 'mnist_lenet':
+                    discriminator = get_discriminator(inp_dim=df.shape[1], out_dim=1, hid_dim=hid_dim,
+                                                      n_hid_layers=n_hid_layers, bayes=bayes, net_name='mnist_lenet')
+
                 d_optimizer = optim.Adam(discriminator.parameters(), lr=lr)#, weight_decay=10**-5)
 
                 train_NN(mix_data, pos_data, discriminator, d_optimizer,
@@ -88,17 +96,32 @@ def estimate_preds_cv(df, target, cv=3, n_networks=1, lr=1e-4, hid_dim=32, n_hid
                         torch.as_tensor(test_data, dtype=torch.float32), return_params=True, sample_noise=False)
                     preds[i, test_index], means[i, test_index], variances[i, test_index] = \
                         pred.detach().numpy().flatten(), mean.detach().numpy().flatten(), var.detach().numpy().flatten()
+                    ######
+                    # pred, mean, var = discriminator(
+                    #     torch.as_tensor(train_data, dtype=torch.float32), return_params=True, sample_noise=False)
+                    # preds[i, train_index], means[i, train_index], variances[i, train_index] = \
+                    #     pred.detach().numpy().flatten(), mean.detach().numpy().flatten(), var.detach().numpy().flatten()
+                    #####
                 else:
                     ress = discriminator(
                         torch.as_tensor(test_data, dtype=torch.float32)).detach().numpy().flatten()
 
                     preds[i, test_index] = ress
+                    ######
+                    # ress = discriminator(
+                    #     torch.as_tensor(train_data, dtype=torch.float32)).detach().numpy().flatten()
+                    #
+                    # preds[i, train_index] = ress
+                    ######
             if random_state is not None:
                 random_state += 1
         preds = preds.mean(axis=0)
     else:
         import text_networks as tn
-        preds = tn.get_text_result(df)
+        if get_non_t_class:
+            preds, discriminator = tn.get_text_result(df, get_non_t_class)
+        else:
+            preds = tn.get_text_result(df, get_non_t_class)
 
     if get_non_t_class:
         return preds, discriminator
@@ -190,6 +213,7 @@ def estimate_diff(preds, target, bw_mix=0.05, bw_pos=0.1, kde_mode='logit', thre
 
     :return: difference of densities f_p / f_u for U sample
     """
+    # kde_mode = 'prob'
 
     if kde_mode is None:
         kde_mode = 'logit'
@@ -543,7 +567,7 @@ def estimate_poster_cv(df, target, estimator='dedpul', bayes=False, alpha=None, 
         if bayes:
             diff = estimate_diff_bayes(means, variances, target, **estimate_diff_options)
         else:
-            diff = estimate_diff(preds, target, **estimate_diff_options)
+            diff = estimate_diff(preds, target, kde_mode='logit',  **estimate_diff_options)
 
     if estimator == 'dedpul':
         alpha, poster = estimate_poster_em(diff=diff, mode='dedpul', alpha=alpha, **estimate_poster_options)

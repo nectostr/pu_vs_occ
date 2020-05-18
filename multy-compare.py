@@ -6,15 +6,21 @@ import comparative_synth as comp
 #     cs.create(error=e)
 #     comp.comare()
 
-# # Error experiment
+# Error experiment
 # for e in (0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5):
 #     cs.create(error=e)
 #     comp.comare()
 
 # Close select experiment
-cs.create()
-comp.comare()
-cs.create_close()
-comp.comare()
-cs.create_close(reverse=True)
-comp.comare()
+# cs.create()
+# comp.comare()
+# cs.create_close()
+# comp.comare()
+# cs.create_close(reverse=True)
+# comp.comare()
+
+
+# # Clusters experiment
+for t in (1,2):
+    cs.create_n_class(mix_type=t)
+    comp.comare()
